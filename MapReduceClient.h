@@ -51,6 +51,7 @@ typedef std::vector<InputPair> InputVec;
 typedef std::vector<IntermediatePair> IntermediateVec;
 typedef std::vector<OutputPair> OutputVec;
 
+typedef int tindex;
 
 class MapReduceClient {
 public:

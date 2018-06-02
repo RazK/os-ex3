@@ -73,13 +73,11 @@ FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, Ou
   inputVec(inputVec),
   outputVec(outputVec),
   numOfThreads(multiThreadLevel),
-  threadContextVec(new Context[multiThreadLevel]),
   atomic_counter(0),
   shuffleLocked(false),
   threadPool(new pthread_t[multiThreadLevel]),
-  barrier(Barrier(multiThreadLevel))
-//  sortedQueueSem()
-
+  barrier(Barrier(multiThreadLevel)),
+  threadContextVec(multiThreadLevel, Context(shuffleLocked, barrier));
 {
     // init semaphore for ready queue sharing
     if (sem_init(&sortedQueueSem, 0, 0) != ErrorCode::SUCCESS)

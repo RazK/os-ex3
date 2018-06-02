@@ -47,7 +47,7 @@ private:
     const InputVec& inputVec;
     OutputVec& outputVec;
     int numOfThreads;
-    Context* threadContextVec;
+    std::vector<Context> threadContextVec;
 
     std::atomic<unsigned long> atomic_counter;
     std::atomic<bool> shuffleLocked;
