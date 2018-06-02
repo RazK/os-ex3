@@ -38,25 +38,16 @@ public:
 
 
 private:
-//    void* threadWork(void * context);
-
-//    std::vector<Context> threadContextVec;
-
-
     const MapReduceClient& client;
+    int numOfThreads;
+    std::atomic<unsigned long> atomic_counter;
     const InputVec& inputVec;
     OutputVec& outputVec;
-    int numOfThreads;
-    std::vector<Context> threadContextVec;
-
-    std::atomic<unsigned long> atomic_counter;
     std::atomic<bool> shuffleLocked;
-//    std::vector<pthread_t> threadPool;
-    pthread_t* threadPool;
-//    bool shuffleLocked;
     Barrier barrier;
     sem_t sortedQueueSem;
-
+    pthread_t* threadPool;
+    Context context;
 
 };
 

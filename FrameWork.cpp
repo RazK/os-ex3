@@ -4,6 +4,7 @@
 
 
 #include "FrameWork.h"
+#include <pthread.h>
 
 ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
 
@@ -24,8 +25,8 @@ void * threadWork(void * contextWrapper) {
     {
         old_value = context->counter++; //atomic
         contextWrapperPtr->context->client.map( context->inputVec.at(old_value).first,
-                                context->inputVec.at(old_value).second,
-                                contextWrapper);
+                                                context->inputVec.at(old_value).second,
+                                                contextWrapper);
 //                   static_cast<void *>(&threadContextVec[*contextWrapperPtr->tindex]));
     }
 
@@ -41,7 +42,7 @@ void * threadWork(void * contextWrapper) {
     //One thread becomes shuffler
 
 //    context->shuffleLocked = true;
-    if(pthread_mutex_lock(context->shufflemutex) != ErrorCode::SUCCESS) {
+    if(pthread_mutex_lock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
         printf("Error\n");
         exit(1);
     }
@@ -49,7 +50,7 @@ void * threadWork(void * contextWrapper) {
     if (context->shuffleLocked == false){
         // lock for the rest of the threads
         context->shuffleLocked = true;
-        sem_wait(context->queueSem);
+        sem_wait(&context->queueSem);
 
         // and party
         //Todo: Shuffle phase - raz.. shine
@@ -60,8 +61,6 @@ void * threadWork(void * contextWrapper) {
 
 
     }
-    while
-
 
 }
 
@@ -70,14 +69,14 @@ void * threadWork(void * contextWrapper) {
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
                      int multiThreadLevel)
 : client(client),
-  inputVec(inputVec),
-  outputVec(outputVec),
   numOfThreads(multiThreadLevel),
   atomic_counter(0),
+  inputVec(inputVec),
+  outputVec(outputVec),
   shuffleLocked(false),
-  threadPool(new pthread_t[multiThreadLevel]),
   barrier(Barrier(multiThreadLevel)),
-  threadContextVec(multiThreadLevel, Context(shuffleLocked, barrier));
+  threadPool(new pthread_t[multiThreadLevel]),
+  context(client, inputVec, outputVec, multiThreadLevel)
 {
     // init semaphore for ready queue sharing
     if (sem_init(&sortedQueueSem, 0, 0) != ErrorCode::SUCCESS)
@@ -119,52 +118,3 @@ ErrorCode FrameWork::run() {
 FrameWork::~FrameWork() {
 //    return;
 }
-
-
-
-//
-//void* FrameWork::threadWork(void * arg) {
-//    int* t_index_ptr  = static_cast<int*> (arg);
-//
-//    //Hungry map loop
-//    unsigned long old_value = 0;
-//    while(old_value < this->inputVec.size())
-//    {
-//        old_value = atomic_counter++;
-//        client.map(inputVec.at(old_value).first,
-//                   inputVec.at(old_value).second,
-//                   static_cast<void *>(&threadContextVec[*t_index_ptr]));
-//    }
-//
-//    // intermediate vector assumed to be populated at this point
-//
-//    // Sorting Stage - No mutually shared objects
-//    threadContextVec[*t_index_ptr].sort();
-//
-//    // Barrier for all threads
-//    this->barrier.barrier();
-//
-//    //After Barrier.
-//    //One thread becomes shuffler
-//
-//    if (shuffleLocked == false){
-//        // lock for the rest of the threads
-//        shuffleLocked = true;
-//
-//        // and party
-//        //Todo: Shuffle phase - raz.. shine
-//        //Todo: Remember to send
-//
-//    }
-
-
-
-
-
-
-
-//    return static_cast<void *>(ErrorCode::FAIL);
-    return NULL;
-}
-
-

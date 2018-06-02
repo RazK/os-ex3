@@ -23,14 +23,14 @@ public:
             int multiThreadLevel);
     ~Context();
 
-    void append(const IntermediatePair& pair);
+    void append(tindex i, const IntermediatePair& pair);
     void sort(tindex i);
 
     const int numOfIntermediatesVecs;
     const MapReduceClient & client;
 
     const InputVec & inputVec;
-    IntermediateVec * intermedVecs;
+    IntermediateVec * intermedVecs[];
     OutputVec & outputVec;
 
     Barrier barrier;
