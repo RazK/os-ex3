@@ -18,13 +18,15 @@ public:
     Context();
     ~Context();
 
-    void append(IntermediatePair pair);
+    void append(const IntermediatePair& pair);
 
     void sort();
 
-private:
-//    IntermediateVec* emit2Accumulator;
-    IntermediateVec emit2Accumulator;
+//private:
+////    IntermediateVec* emit2Accumulator;
+//    IntermediateVec emit2Accumulator;
+//private:
+    IntermediateVec* emit2Accumulator;
 };
 
 

@@ -3,9 +3,8 @@
 //
 #include "Context.h"
 #include <algorithm>    // std::sort
-#include <>
 
-Context::Context() : emit2Accumulator(new IntermediateVec) {}
+Context::Context() : emit2Accumulator(new IntermediateVec()) {}
 
 Context::~Context() {
     delete this->emit2Accumulator;
@@ -19,6 +18,6 @@ void Context::sort() {
 }
 
 
-void Context::append(const IntermediatePair pair) {
+void Context::append(const IntermediatePair& pair) {
     this->emit2Accumulator->push_back(pair);
 }
