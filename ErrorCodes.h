@@ -5,7 +5,7 @@
 #ifndef ERRORCODES_H
 #define ERRORCODES_H
 
-#define PRINT_ERR(ErrorCode) printf("ERR [%d] : FILE [%s] LINE [%s]", ErrorCode, __FILE__, __LINE__);
+#define PRINT_ERR(ErrorCode) printf("ERR [%d] : LINE [%d] FILE [%s]", ErrorCode, __LINE__, __FILE__);
 
 typedef enum _ErrorCode{
     FAIL = -1,
