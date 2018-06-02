@@ -18,6 +18,7 @@ void runMapReduceFramework(const MapReduceClient& client,
                            const InputVec& inputVec, OutputVec& outputVec,
                            int multiThreadLevel){
     FrameWork framework = FrameWork(client, inputVec, outputVec, multiThreadLevel);
+    framework.run();
 
 
 }

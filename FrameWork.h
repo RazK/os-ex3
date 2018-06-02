@@ -9,6 +9,8 @@
 #include "MapReduceClient.h"
 
 #include "Context.h"
+#include "ErrorCodes.h"
+#include <pthread.h>
 
 #include <vector> //sdt:vec
 #include <utility> //std:pair
@@ -28,16 +30,17 @@ public:
 private:
     ErrorCode threadWork();
 
-    std::vector <Context> threadContextVec;
-    pthread_t threadPool[];
+    std::vector<Context> threadContextVec;
+    std::vector<pthread_t> threadPool;
 
     bool shuffleLocked;
 
-    int numOfThreads;
+
 
     const MapReduceClient& client;
     const InputVec& inputVec;
     OutputVec& outputVec;
+    int numOfThreads;
 
 //    int multiThreadLevel;
 
