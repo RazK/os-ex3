@@ -30,7 +30,7 @@ Context::Context(const MapReduceClient& client,
     }
 
     // init semaphore
-    if (sem_init(sem=&queueSem, pshared=0, value=0) != ErrorCode::SUCCESS){
+    if (sem_init(&queueSem, 0, 0) != ErrorCode::SUCCESS){
         printf("ERROR\n");
         exit(1);
     }
