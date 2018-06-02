@@ -7,6 +7,7 @@
 
 #include "MapReduceClient.h"
 #include "ErrorCodes.h"
+#include <algorithm>    // std::sort
 //#include <vector> //sdt:vec
 //#include <utility> //std:pair
 
@@ -21,8 +22,11 @@ public:
 
     ErrorCode append(IntermediatePair);
 
+    void sort();
+
 private:
-    IntermediateVec* emit2Accumulator;
+//    IntermediateVec* emit2Accumulator;
+    IntermediateVec emit2Accumulator;
     int tid;
 
 };

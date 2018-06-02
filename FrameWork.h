@@ -28,13 +28,9 @@ public:
 
 
 private:
-    ErrorCode threadWork();
+    void * threadWork(void * arg);
 
 //    std::vector<Context> threadContextVec;
-    std::vector<pthread_t> threadPool;
-
-    bool shuffleLocked;
-
 
 
     const MapReduceClient& client;
@@ -43,8 +39,11 @@ private:
     int numOfThreads;
     Context* threadContextVec;
 
+    std::atomic<unsigned long> atomic_counter;
+//    std::vector<pthread_t> threadPool;
+    pthread_t* threadPool;
+    bool shuffleLocked;
 
-//    int multiThreadLevel;
 
 
 };
