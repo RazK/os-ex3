@@ -12,6 +12,7 @@
 #include <algorithm>    // std::sort
 #include <atomic>
 #include <semaphore.h>
+#include <set>
 //#include <vector> //sdt:vec
 //#include <utility> //std:pair
 
@@ -34,7 +35,9 @@ public:
 
     std::vector<IntermediateVec> readyQueue;
 
+    IntermediateKeySet ** uniqueK2set; // TODO: Initialize after sort
     IntermediateVec ** intermedVecs;
+
     OutputVec & outputVec;
 
     Barrier barrier;

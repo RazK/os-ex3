@@ -3,6 +3,7 @@
 
 #include <vector>  //std::vector
 #include <utility> //std::pair
+#include <set> //std::set
 
 // input key and value.
 // the key, value for the map function and the MapReduceFramework
@@ -49,6 +50,7 @@ typedef std::pair<K3*, V3*> OutputPair;
 
 typedef std::vector<InputPair> InputVec;
 typedef std::vector<IntermediatePair> IntermediateVec;
+typedef std::set<K2> IntermediateKeySet;
 typedef std::vector<OutputPair> OutputVec;
 
 typedef int tindex;

@@ -5,6 +5,7 @@
 
 #include "FrameWork.h"
 #include <pthread.h>
+#include <set>
 
 ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
 
@@ -28,9 +29,7 @@ void * threadWork(void * contextWrapper) {
                                                 context->inputVec.at(old_value).second,
                                                 contextWrapper);
     }
-
     // intermediate vector assumed to be populated at this point
-
     // Sorting Stage - No mutually shared objects
     context->sort(threadIndex);
 
@@ -52,8 +51,13 @@ void * threadWork(void * contextWrapper) {
             printf("Error\n");
             exit(1);
         }
-        for (int tid=0; tid<context->numOfIntermediatesVecs; tid++){
 
+        // Find all unique keys in all intermediate vectors
+        IntermediateKeySet uniKeys;
+        for (int i = 0; i < context->numOfIntermediatesVecs; i++) {
+            for (const auto &key : *context->uniqueK2set[i]) {
+                uniKeys.insert(key);
+            }
         }
 
 
@@ -61,12 +65,7 @@ void * threadWork(void * contextWrapper) {
         //Todo: Shuffle phase - raz.. shine
         //Todo: Remember to send signal via semaphore. whenever the queue is read,
         // use sem_post(context->queueSem)
-
-
-
-
     }
-
 }
 
 
