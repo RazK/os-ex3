@@ -4,7 +4,45 @@
 
 
 #include "FrameWork.h"
-#include "ErrorCodes.h"
+
+
+
+threadWork(void * arg) {
+    Context* contextPtr  = static_cast<Context*> (arg);
+
+    //Hungry map loop
+    unsigned long old_value = 0;
+    while(old_value < contextPtr->inputVec.size())
+    {
+        old_value = contextPtr->atomic_counter++;
+        contextPtr->client.map( contextPtr->inputVec.at(old_value).first,
+                                contextPtr->inputVec.at(old_value).second,
+                                context;
+//                   static_cast<void *>(&threadContextVec[*contextPtr->tindex]));
+    }
+
+    // intermediate vector assumed to be populated at this point
+
+    // Sorting Stage - No mutually shared objects
+    threadContextVec[*contextPtr].sort();
+
+    // Barrier for all threads
+    this->barrier.barrier();
+
+    //After Barrier.
+    //One thread becomes shuffler
+
+    if (shuffleLocked == false){
+        // lock for the rest of the threads
+        shuffleLocked = true;
+
+        // and party
+        //Todo: Shuffle phase - raz.. shine
+        //Todo: Remember to send
+
+    }
+}
+
 
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
                      int multiThreadLevel)
@@ -37,7 +75,7 @@ ErrorCode FrameWork::run() {
 
         //    Spawn threads on work function
     for (int t_index=0; t_index<this->numOfThreads; t_index++){
-        if ((pthread_create(&threadPool[t_index], NULL, this->threadWork, (void *)t_index)) !=
+        if ((pthread_create(&threadPool[t_index], NULL, threadWork, (void *)t_index)) !=
             ErrorCode::SUCCESS)
         {
             printf("ERROR\n");
@@ -58,40 +96,46 @@ ErrorCode FrameWork::run() {
 FrameWork::~FrameWork() {
 //    return;
 }
+//
+//void* FrameWork::threadWork(void * arg) {
+//    int* t_index_ptr  = static_cast<int*> (arg);
+//
+//    //Hungry map loop
+//    unsigned long old_value = 0;
+//    while(old_value < this->inputVec.size())
+//    {
+//        old_value = atomic_counter++;
+//        client.map(inputVec.at(old_value).first,
+//                   inputVec.at(old_value).second,
+//                   static_cast<void *>(&threadContextVec[*t_index_ptr]));
+//    }
+//
+//    // intermediate vector assumed to be populated at this point
+//
+//    // Sorting Stage - No mutually shared objects
+//    threadContextVec[*t_index_ptr].sort();
+//
+//    // Barrier for all threads
+//    this->barrier.barrier();
+//
+//    //After Barrier.
+//    //One thread becomes shuffler
+//
+//    if (shuffleLocked == false){
+//        // lock for the rest of the threads
+//        shuffleLocked = true;
+//
+//        // and party
+//        //Todo: Shuffle phase - raz.. shine
+//        //Todo: Remember to send
+//
+//    }
 
-void* FrameWork::threadWork(void * context) {
-    Context* myContext  = static_cast<int*> (context);
 
-    //Hungry map loop
-    unsigned long old_value = 0;
-    while(old_value < this->inputVec.size())
-    {
-        old_value = atomic_counter++;
-        client.map(inputVec.at(old_value).first,
-                   inputVec.at(old_value).second,
-                   context);
-    }
 
-    // intermediate vector assumed to be populated at this point
 
-    // Sorting Stage - No mutually shared objects
-    myContext->sort();
 
-    // Barrier for all threads
-    this->barrier.barrier();
 
-    //After Barrier.
-    //One thread becomes shuffler
-
-    if (shuffleLocked == false){
-        // lock for the rest of the threads
-        shuffleLocked = true;
-
-        // and party
-        //Todo: Shuffle phase - raz.. shine
-        //Todo: Remember to send
-
-    }
 
 //    return static_cast<void *>(ErrorCode::FAIL);
     return NULL;
