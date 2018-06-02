@@ -20,6 +20,7 @@ public:
     FrameWork(const MapReduceClient& client,
               const InputVec& inputVec, OutputVec& outputVec,
               int multiThreadLevel);
+    ErrorCode run();
     ~FrameWork();
 
 
