@@ -13,7 +13,8 @@ Context::Context(const MapReduceClient& client,
         outputVec(outputVec),
         barrier(multiThreadLevel),
         shuffleLocked(false),
-        counter(0)
+        counter(0),
+        queueSem(0)
 {
     // Initialize multiple mutexes
     if (pthread_mutex_init(&shuffleMutex, nullptr) != ErrorCode::SUCCESS){
@@ -30,10 +31,12 @@ Context::Context(const MapReduceClient& client,
     }
 
     // init semaphore
-    if (sem_init(&queueSem, 0, 0) != ErrorCode::SUCCESS){
-        fprintf(stderr, "Error: Failure to init semaphore in Context init.\n");
-        exit(1);
-    }
+    // already did in init list
+//    if (sem_init(&queueSem, 0, 0) != ErrorCode::SUCCESS){
+//        fprintf(stderr, "Error: Failure to init semaphore in Context init.\n");
+//        exit(1);
+//    }
+
 
     // Initialize empty intermediate pairs
     for (int i = 0; i < numOfIntermediatesVecs; i++){
@@ -61,10 +64,11 @@ Context::~Context() {
         fprintf(stderr, "Error: Failure destroy a mutex in Context dtor.\n");
         exit(1);
     }
-    if (sem_destroy(&queueSem) != ErrorCode::SUCCESS){
-        fprintf(stderr, "Error: Failure destroy semaphore in Context dtor.\n");
-        exit(1);
-    }
+//    if (sem_destroy(&queueSem) != ErrorCode::SUCCESS){
+//        fprintf(stderr, "Error: Failure destroy semaphore in Context dtor.\n");
+//        exit(1);
+//    }
+    queueSem.~Semaphore() ;
 
 }
 

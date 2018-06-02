@@ -46,7 +46,7 @@ void * threadWork(void * contextWrapper) {
     if (context->shuffleLocked == false){
         // lock for the rest of the threads
         context->shuffleLocked = true;
-        sem_wait(&context->queueSem);
+
         // Let the rest of the threads run
         if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
             fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
@@ -56,24 +56,21 @@ void * threadWork(void * contextWrapper) {
 
         }
 
+        // Todo: use context->queueSem.incSize();
 
-        // and party
-        //Todo: Shuffle phase - raz.. shine
-        //Todo: Remember to send signal via semaphore. whenever the queue is read,
-        // use sem_post(context->queueSem)
-
-
-
+        // This notifies all threads shuffle stage is over.
         context->shuffleLocked = false;
     }
     // All threads continue here. ShuffleLocked represents the shuffler is still working
-    while(context->shuffleLocked && not context->readyQueue.empty()){
+    while(context->shuffleLocked || not context->readyQueue.empty()){
         // Wait for the shuffler to populate queue. Signal comes through semaphore
-        if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
-        {
-            fprintf(stderr, "Error: Semaphore failure in waiting thread.\n");
-            exit(1);
-        }
+//        if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
+//        {
+//            fprintf(stderr, "Error: Semaphore failure in waiting thread.\n");
+//            exit(1);
+//        }
+        context->queueSem.aquire();
+        context->queueSem.decSize();
 
         // Lock the mutex to access mutual queue
         if (pthread_mutex_lock(&context->queueMutex) != ErrorCode::SUCCESS)
@@ -93,37 +90,27 @@ void * threadWork(void * contextWrapper) {
 
 
     }
-
-
-
+    return (void *)ErrorCode::SUCCESS;
 }
 
 
 
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
-                     int multiThreadLevel)
-: client(client),
+                     int multiThreadLevel) :
+// client(client),
   numOfThreads(multiThreadLevel),
-  atomic_counter(0),
-  inputVec(inputVec),
-  outputVec(outputVec),
-  shuffleLocked(false),
-  barrier(Barrier(multiThreadLevel)),
+//  atomic_counter(0),
+//  inputVec(inputVec),
+//  outputVec(outputVec),
+//  shuffleLocked(false),
+//  barrier(Barrier(multiThreadLevel)),
   threadPool(new pthread_t[multiThreadLevel]),
   context(client, inputVec, outputVec, multiThreadLevel)
 {
-    // init semaphore for ready queue sharing
-    if (sem_init(&sortedQueueSem, 0, 0) != ErrorCode::SUCCESS)
-    {
-        fprintf(stderr, "Error: Semaphore failure for queue sharing.\n");
-        exit(1);
-    }
+
 
     //Todo: May nee to truncate the number of threads in use to the size of input vector.
 
-//    this->barrier = Barrier(multiThreadLevel);
-//    this->shuffleLocked = false;
-//    this->threadPool = std::vector<pthread_t>();
 }
 
 ErrorCode FrameWork::run() {
@@ -131,8 +118,8 @@ ErrorCode FrameWork::run() {
 
     //    Spawn threads on work function
     for (int t_index=0; t_index<this->numOfThreads; t_index++){
-        if ((pthread_create(&threadPool[t_index], nullptr, threadWork, (void *)t_index)) !=
-            ErrorCode::SUCCESS) {
+        if ((pthread_create(&threadPool[t_index], nullptr, threadWork,
+                            static_cast<void *>(&context))) != ErrorCode::SUCCESS) {
             fprintf(stderr, "Error: Failure to spawn new thread in run.\n");
             exit(-1);
         }

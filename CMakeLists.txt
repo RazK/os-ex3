@@ -18,6 +18,6 @@ set(SOURCE_FILES
         Barrier.cpp
         Barrier.h
         TestClient.cpp
-        SampleClient.cpp)
+        SampleClient.cpp Semaphore.h Semaphore.cpp)
 
 add_executable(os_ex3 ${SOURCE_FILES})

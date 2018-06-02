@@ -9,6 +9,7 @@
 #include "MapReduceFramework.h"
 #include "ErrorCodes.h"
 #include "Barrier.h"
+#include "Semaphore.h"
 #include <algorithm>    // std::sort
 #include <atomic>
 #include <semaphore.h>
@@ -42,9 +43,10 @@ public:
     pthread_mutex_t outVecMutex;
     pthread_mutex_t queueMutex;
     std::atomic<bool> shuffleLocked;
-//    std::atomic<bool> shuffling;
     std::atomic<unsigned long> counter;
-    sem_t queueSem;
+
+//    sem_t queueSem; //deprecated
+    Semaphore queueSem;
 
 
 };
