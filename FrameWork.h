@@ -30,7 +30,7 @@ public:
 private:
     ErrorCode threadWork();
 
-    std::vector<Context> threadContextVec;
+//    std::vector<Context> threadContextVec;
     std::vector<pthread_t> threadPool;
 
     bool shuffleLocked;
@@ -41,6 +41,8 @@ private:
     const InputVec& inputVec;
     OutputVec& outputVec;
     int numOfThreads;
+    Context* threadContextVec;
+
 
 //    int multiThreadLevel;
 

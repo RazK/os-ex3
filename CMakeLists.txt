@@ -11,6 +11,8 @@ set(SOURCE_FILES
         ErrorCodes.h
         FrameWork.h
         FrameWork.cpp
+        Context.h
+        Context.cpp
         MapReduceFramework.h
         MapReduceFramework.cpp
 

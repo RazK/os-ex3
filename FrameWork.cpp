@@ -9,7 +9,7 @@
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
                      int multiThreadLevel)
 : client(client), inputVec(inputVec), outputVec(outputVec), numOfThreads(multiThreadLevel),
-  threadContextVec(new std::vector<Context>)
+  threadContextVec(new Context[multiThreadLevel])
 {
 //    return ;
 }
