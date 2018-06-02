@@ -104,7 +104,8 @@ FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, Ou
 //  outputVec(outputVec),
 //  shuffleLocked(false),
 //  barrier(Barrier(multiThreadLevel)),
-  threadPool(new pthread_t[multiThreadLevel]),
+  threadPool(new pthread_t[
+          multiThreadLevel]),
   context(client, inputVec, outputVec, multiThreadLevel)
 {
 
