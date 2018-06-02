@@ -12,7 +12,8 @@ Context::Context(const MapReduceClient& client,
         inputVec(inputVec),
         outputVec(outputVec),
         barrier(multiThreadLevel),
-        shuffleLocked(false)
+        shuffleLocked(false),
+        counter(0)
 {
     // Initialize multiple mutexes
     if (pthread_mutex_init(&shuffleMutex, nullptr) != ErrorCode::SUCCESS){
@@ -20,6 +21,16 @@ Context::Context(const MapReduceClient& client,
         exit(1);
     }
     if (pthread_mutex_init(&outVecMutex, nullptr) != ErrorCode::SUCCESS){
+        printf("ERROR\n");
+        exit(1);
+    }
+    if (pthread_mutex_init(&queueMutex, nullptr) != ErrorCode::SUCCESS){
+        printf("ERROR\n");
+        exit(1);
+    }
+
+    // init semaphore
+    if (sem_init(sem=&queueSem, pshared=0, value=0) != ErrorCode::SUCCESS){
         printf("ERROR\n");
         exit(1);
     }
@@ -46,6 +57,15 @@ Context::~Context() {
         printf("ERROR\n");
         exit(1);
     }
+    if (pthread_mutex_destroy(&queueMutex) != ErrorCode::SUCCESS){
+        printf("ERROR\n");
+        exit(1);
+    }
+    if (sem_destroy(&queueSem) != ErrorCode::SUCCESS){
+        printf("ERROR\n");
+        exit(1);
+    }
+
 }
 
 void Context::sort(const tindex i) {

@@ -40,9 +40,13 @@ public:
     Barrier barrier;
     pthread_mutex_t shuffleMutex;
     pthread_mutex_t outVecMutex;
+    pthread_mutex_t queueMutex;
     std::atomic<bool> shuffleLocked;
+//    std::atomic<bool> shuffling;
     std::atomic<unsigned long> counter;
     sem_t queueSem;
+
+
 };
 
 

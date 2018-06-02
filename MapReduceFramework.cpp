@@ -15,36 +15,35 @@ void emit2 (K2* key, V2* value, void* context){
 }
 
 void emit3 (K3* key, V3* value, void* context){
+    auto contextWrap = static_cast<ContextWrapper*>(context);
+    auto threadContext = contextWrap->context;
+
+    OutputPair pair = OutputPair(key, value);
+
     // All threads want to use the OutputVector
+    // Lock the mutex for access
+    if (pthread_mutex_lock(&threadContext->outVecMutex) != 0){
+        fprintf(stderr, "ERROR\n");
+        exit(1);
+    }
+    threadContext->outputVec.push_back(pair);
+    if (pthread_mutex_unlock(&threadContext->outVecMutex) != 0){
+        fprintf(stderr, "ERROR\n");
+        exit(1);
+    }
+
+
     // TODO: Solve using cv_wait to avoid busy_waiting
-//    if (pthread_mutex_lock(&mutex) != 0){
-//        fprintf(stderr, "[[Barrier]] error on pthread_mutex_lock");
-//        exit(1);
-//    }
-//    if (++count < numThreads) {
-//        if (pthread_cond_wait(&cv, &mutex) != 0){
-//            fprintf(stderr, "[[Barrier]] error on pthread_cond_wait");
-//            exit(1);
-//        }
-//    } else {
-//        count = 0;
-//        if (pthread_cond_broadcast(&cv) != 0) {
-//            fprintf(stderr, "[[Barrier]] error on pthread_cond_broadcast");
-//            exit(1);
-//        }
-//    }
-//    if (pthread_mutex_unlock(&mutex) != 0) {
-//        fprintf(stderr, "[[Barrier]] error on pthread_mutex_unlock");
-//        exit(1);
-//    }
+
 }
 
 void runMapReduceFramework(const MapReduceClient& client,
                            const InputVec& inputVec, OutputVec& outputVec,
                            int multiThreadLevel){
     FrameWork framework(client, inputVec, outputVec, multiThreadLevel);
-    framework.run();
-
-
+    if (framework.run() != ErrorCode::SUCCESS){
+        printf( "Error\n");
+        exit(1);
+    }
 }
 

@@ -64,8 +64,37 @@ void * threadWork(void * contextWrapper) {
 
 
 
+        context->shuffleLocked = false;
+    }
+    // All threads continue here. ShuffleLocked represents the shuffler is still working
+    while(context->shuffleLocked && not context->readyQueue.empty()){
+        // Wait for the shuffler to populate queue. Signal comes through semaphore
+        if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
+        {
+            printf("Error\n");
+            exit(1);
+        }
+
+        // Lock the mutex to access mutual queue
+        if (pthread_mutex_lock(&context->queueMutex) != ErrorCode::SUCCESS)
+        {
+            printf("Error\n");
+            exit(1);
+        }
+        // retrieve next job and pop it from the list
+        IntermediateVec job = context->readyQueue.back();
+        context->readyQueue.pop_back();
+        if (pthread_mutex_unlock(&context->queueMutex) != ErrorCode::SUCCESS)
+        {
+            printf("Error\n");
+            exit(1);
+        }
+        context->client.reduce(&job, contextWrapper);
+
 
     }
+
+
 
 }
 
