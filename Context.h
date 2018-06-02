@@ -30,7 +30,7 @@ public:
     const MapReduceClient & client;
 
     const InputVec & inputVec;
-    IntermediateVec * intermedVecs;
+    IntermediateVec * intermedVecs[];
     OutputVec & outputVec;
 
     Barrier barrier;
