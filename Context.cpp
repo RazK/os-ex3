@@ -3,7 +3,7 @@
 //
 #include "Context.h"
 
-Context::Context() : emit2Accumulator(new std::vector<IntermediatePair>){}
+Context::Context() : emit2Accumulator(new IntermediateVec){}
 
 Context::~Context() {
     delete this->emit2Accumulator;

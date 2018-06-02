@@ -22,7 +22,7 @@ public:
     ErrorCode append(IntermediatePair);
 
 private:
-    IntermediateVec emit2Accumulator;
+    IntermediateVec* emit2Accumulator;
     int tid;
 
 };
