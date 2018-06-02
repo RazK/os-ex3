@@ -15,10 +15,16 @@
 
 #include <semaphore.h>
 #include <atomic>
+#include "Context.h"
 
 #include <vector> //sdt:vec
 #include <utility> //std:pair
 
+struct ContextWrapper {
+    ContextWrapper(int threadIndex, Context* c);
+    Context* context;
+    int threadIndex;
+};
 
 class FrameWork{
 

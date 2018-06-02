@@ -5,43 +5,53 @@
 
 #include "FrameWork.h"
 
+ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
+
+    this->threadIndex = threadIndex;
+    this->context = context;
+
+}
 
 
-threadWork(void * arg) {
-    Context* contextPtr  = static_cast<Context*> (arg);
+void * threadWork(void * contextWrapper) {
+    auto contextWrapperPtr  = static_cast<ContextWrapper*> (contextWrapper);
+    int threadIndex = contextWrapperPtr->threadIndex;
+    Context* context = contextWrapperPtr->context;
 
     //Hungry map loop
     unsigned long old_value = 0;
-    while(old_value < contextPtr->inputVec.size())
+    while(old_value < context->inputVec.size())
     {
-        old_value = contextPtr->atomic_counter++;
-        contextPtr->client.map( contextPtr->inputVec.at(old_value).first,
-                                contextPtr->inputVec.at(old_value).second,
-                                context;
-//                   static_cast<void *>(&threadContextVec[*contextPtr->tindex]));
+        old_value = context->counter++; //atomic
+        contextWrapperPtr->context->client.map( context->inputVec.at(old_value).first,
+                                context->inputVec.at(old_value).second,
+                                contextWrapper);
+//                   static_cast<void *>(&threadContextVec[*contextWrapperPtr->tindex]));
     }
 
     // intermediate vector assumed to be populated at this point
 
     // Sorting Stage - No mutually shared objects
-    threadContextVec[*contextPtr].sort();
+    context->sort(threadIndex);
 
     // Barrier for all threads
-    this->barrier.barrier();
+    context->barrier.barrier();
 
     //After Barrier.
     //One thread becomes shuffler
 
-    if (shuffleLocked == false){
+    if (context->shuffleLocked == false){
         // lock for the rest of the threads
-        shuffleLocked = true;
+        context->shuffleLocked = true;
 
         // and party
         //Todo: Shuffle phase - raz.. shine
-        //Todo: Remember to send
+        //Todo: Remember to send signal via semaphore
 
     }
+
 }
+
 
 
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
@@ -142,3 +152,5 @@ FrameWork::~FrameWork() {
 //    return static_cast<void *>(ErrorCode::FAIL);
     return NULL;
 }
+
+
