@@ -4,6 +4,7 @@
 
 
 #include "FrameWork.h"
+#include <pthread.h>
 
 ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
 
@@ -24,8 +25,8 @@ void * threadWork(void * contextWrapper) {
     {
         old_value = context->counter++; //atomic
         contextWrapperPtr->context->client.map( context->inputVec.at(old_value).first,
-                                context->inputVec.at(old_value).second,
-                                contextWrapper);
+                                                context->inputVec.at(old_value).second,
+                                                contextWrapper);
     }
 
     // intermediate vector assumed to be populated at this point
@@ -65,8 +66,6 @@ void * threadWork(void * contextWrapper) {
 
 
     }
-    while
-
 
 }
 
@@ -75,14 +74,14 @@ void * threadWork(void * contextWrapper) {
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
                      int multiThreadLevel)
 : client(client),
-  inputVec(inputVec),
-  outputVec(outputVec),
   numOfThreads(multiThreadLevel),
   atomic_counter(0),
+  inputVec(inputVec),
+  outputVec(outputVec),
   shuffleLocked(false),
-  threadPool(new pthread_t[multiThreadLevel]),
   barrier(Barrier(multiThreadLevel)),
-  threadContextVec(multiThreadLevel, Context(shuffleLocked, barrier))
+  threadPool(new pthread_t[multiThreadLevel]),
+  context(client, inputVec, outputVec, multiThreadLevel)
 {
     // init semaphore for ready queue sharing
     if (sem_init(&sortedQueueSem, 0, 0) != ErrorCode::SUCCESS)
@@ -124,6 +123,3 @@ ErrorCode FrameWork::run() {
 FrameWork::~FrameWork() {
 //    return;
 }
-
-
-

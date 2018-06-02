@@ -80,11 +80,11 @@ int main(int argc, char** argv)
 //    inputVec.push_back({nullptr, &s1});
 //    inputVec.push_back({nullptr, &s2});
 //    inputVec.push_back({nullptr, &s3});
-    Context* context = new Context();
-    client.map(nullptr, &s1, context);
-    for (auto pair : *context->emit2Accumulator){
-        std::cout << reinterpret_cast<KChar*>(pair.first)->c << " : " << reinterpret_cast<VCount*>(pair.second)->count << std::endl;
-    }
+//    Context* context = new Context();
+//    client.map(nullptr, &s1, context);
+//    for (auto pair : *context->emit2Accumulator){
+//        std::cout << reinterpret_cast<KChar*>(pair.first)->c << " : " << reinterpret_cast<VCount*>(pair.second)->count << std::endl;
+//    }
 
 //    for (OutputPair& pair: outputVec) {
 //        char c = ((const KChar*)pair.first)->c;
