@@ -3,7 +3,10 @@
 //
 #include "Context.h"
 
-Context::Context() : emit2Accumulator(new IntermediateVec()) {}
+Context::Context(Context(std::atomic<bool> const & suffleLocked, Barrier const & shuffleBarrier)) :
+        shuffleLocked(shuffleLocked),
+        shuffleBarrier(shuffleBarrier),
+        emit2Accumulator(new IntermediateVec()) {}
 
 Context::~Context() {
     delete this->emit2Accumulator;

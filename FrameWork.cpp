@@ -8,8 +8,8 @@
 
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
                      int multiThreadLevel)
-: client(client), inputVec(inputVec), outputVec(outputVec), numOfThreads(multiThreadLevel),
-  threadContextVec(new Context[multiThreadLevel])
+: client(client), inputVec(inputVec), outputVec(outputVec), numOfThreads(multiThreadLevel), shuffleBarrier(new Barrier(multiThreadLevel)), shuffleLocked(
+        false), threadContextVec(new Context[multiThreadLevel](shuffleLocked, shuffleBarrier))
 {
 //    return ;
 }

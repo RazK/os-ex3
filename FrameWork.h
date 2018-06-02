@@ -33,10 +33,8 @@ private:
 //    std::vector<Context> threadContextVec;
     std::vector<pthread_t> threadPool;
 
-    bool shuffleLocked;
-
-
-
+    std::atomic<bool> shuffleLocked;
+    Barrier shuffleBarrier;
     const MapReduceClient& client;
     const InputVec& inputVec;
     OutputVec& outputVec;
