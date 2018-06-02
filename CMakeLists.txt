@@ -8,6 +8,6 @@ set(SOURCE_FILES
         MapReduceClient.h
         ErrorCodes.h
         MapReduceFramework.h
-        TestClient.cpp)
+        TestClient.cpp MapReduceFramework.cpp)
 
 add_executable(os_ex3 ${SOURCE_FILES})
