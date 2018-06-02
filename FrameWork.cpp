@@ -40,15 +40,28 @@ void * threadWork(void * contextWrapper) {
     //After Barrier.
     //One thread becomes shuffler
 
+//    context->shuffleLocked = true;
+    if(pthread_mutex_lock(context->shufflemutex) != ErrorCode::SUCCESS) {
+        printf("Error\n");
+        exit(1);
+    }
+
     if (context->shuffleLocked == false){
         // lock for the rest of the threads
         context->shuffleLocked = true;
+        sem_wait(context->queueSem);
 
         // and party
         //Todo: Shuffle phase - raz.. shine
-        //Todo: Remember to send signal via semaphore
+        //Todo: Remember to send signal via semaphore. whenever the queue is read,
+        // use sem_post(context->queueSem)
+
+
+
 
     }
+    while
+
 
 }
 
@@ -87,7 +100,7 @@ ErrorCode FrameWork::run() {
 
         //    Spawn threads on work function
     for (int t_index=0; t_index<this->numOfThreads; t_index++){
-        if ((pthread_create(&threadPool[t_index], NULL, threadWork, (void *)t_index)) !=
+        if ((pthread_create(&threadPool[t_index], nullptr, threadWork, (void *)t_index)) !=
             ErrorCode::SUCCESS)
         {
             printf("ERROR\n");
@@ -108,6 +121,9 @@ ErrorCode FrameWork::run() {
 FrameWork::~FrameWork() {
 //    return;
 }
+
+
+
 //
 //void* FrameWork::threadWork(void * arg) {
 //    int* t_index_ptr  = static_cast<int*> (arg);
