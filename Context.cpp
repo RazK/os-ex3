@@ -12,9 +12,18 @@ Context::Context(const MapReduceClient& client,
         inputVec(inputVec),
         outputVec(outputVec),
         barrier(multiThreadLevel),
-        shuffleLocked(false){
-    // Initialize shuffle mutex
-    pthread_mutex_init(&shuffleMutex, nullptr);
+        shuffleLocked(false)
+{
+    // Initialize multiple mutexes
+    if (pthread_mutex_init(&shuffleMutex, nullptr) != ErrorCode::SUCCESS){
+        printf("ERROR\n");
+        exit(1);
+    }
+    if (pthread_mutex_init(&outVecMutex, nullptr) != ErrorCode::SUCCESS){
+        printf("ERROR\n");
+        exit(1);
+    }
+//    pthread_mutex_init(&shuffleMutex, nullptr);
 
     // Initialize empty intermediate pairs
     for (int i = 0; i < numOfIntermediatesVecs; i++){
@@ -30,14 +39,21 @@ Context::~Context() {
     }
 
     // Destroy shuffle mutex
-    pthread_mutex_destroy(&shuffleMutex);
+    if (pthread_mutex_destroy(&shuffleMutex) != ErrorCode::SUCCESS){
+        printf("ERROR\n");
+        exit(1);
+    }
+    if (pthread_mutex_destroy(&outVecMutex) != ErrorCode::SUCCESS){
+        printf("ERROR\n");
+        exit(1);
+    }
 }
 
-void Context::sort(tindex i) {
+void Context::sort(const tindex i) {
     std::sort(this->intermedVecs[i]->begin(), this->intermedVecs[i]->end());
 }
 
 
-void Context::append(tindex i, const IntermediatePair& pair) {
+void Context::append(const tindex i, const IntermediatePair& pair) {
     this->intermedVecs[i]->push_back(pair);
 }

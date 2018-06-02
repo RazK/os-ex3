@@ -6,6 +6,7 @@
 #define CONTEXT_H
 
 #include "MapReduceClient.h"
+#include "MapReduceFramework.h"
 #include "ErrorCodes.h"
 #include "Barrier.h"
 #include <algorithm>    // std::sort
@@ -23,15 +24,16 @@ public:
             int multiThreadLevel);
     ~Context();
 
-    void append(const IntermediatePair& pair);
+    void append(tindex i, const IntermediatePair& pair);
     void sort(tindex i);
 
     const int numOfIntermediatesVecs;
     const MapReduceClient & client;
 
-
-
     const InputVec & inputVec;
+
+    std::vector<IntermediateVec> readyQueue;
+
     IntermediateVec * intermedVecs[];
     OutputVec & outputVec;
 
