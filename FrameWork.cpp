@@ -4,8 +4,11 @@
 
 
 #include "FrameWork.h"
-#include "ErrorCodes.h"
-#include <atomic>
+//#include "ErrorCodes.h"
+//#include "Barrier.h"
+
+//#include <semaphore.h>
+//#include <atomic>
 
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
                      int multiThreadLevel)
@@ -15,8 +18,23 @@ FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, Ou
   numOfThreads(multiThreadLevel),
   threadContextVec(new Context[multiThreadLevel]),
   atomic_counter(0),
-  threadPool(new pthread_t[multiThreadLevel])
+  shuffleLocked(false),
+  threadPool(new pthread_t[multiThreadLevel]),
+  barrier(Barrier(multiThreadLevel)),
+//  sortedQueueSem()
+
 {
+    // init semaphore for ready queue sharing
+    if (sem_init(&sortedQueueSem, 0, 0) != ErrorCode::SUCCESS)
+    {
+        printf("ERROR\n");
+        exit(1);
+    }
+
+    //Todo: May nee to truncate the number of threads in use to the size of input vector.
+
+//    this->barrier = Barrier(multiThreadLevel);
+//    this->shuffleLocked = false;
 //    this->threadPool = std::vector<pthread_t>();
 }
 
@@ -63,6 +81,27 @@ void* FrameWork::threadWork(void * arg) {
     // intermediate vector assumed to be populated at this point
 
     // Sorting Stage - No mutually shared objects
+    threadContextVec[t_index].sort();
+
+    // Barrier for all threads
+    this->barrier.barrier();
+
+    //After Barrier.
+    //One thread becomes shuffler
+
+    if (shuffleLocked == false){
+        // lock for the rest of the threads
+        shuffleLocked = true;
+
+        // and party
+        //Todo: Shuffle phase - raz.. shine
+        //Todo: Remember to send
+
+    }
+
+
+
+
 
 
 

@@ -10,7 +10,11 @@
 
 #include "Context.h"
 #include "ErrorCodes.h"
+#include "Barrier.h"
 #include <pthread.h>
+
+#include <semaphore.h>
+#include <atomic>
 
 #include <vector> //sdt:vec
 #include <utility> //std:pair
@@ -40,10 +44,12 @@ private:
     Context* threadContextVec;
 
     std::atomic<unsigned long> atomic_counter;
+    std::atomic<bool> shuffleLocked;
 //    std::vector<pthread_t> threadPool;
     pthread_t* threadPool;
-    bool shuffleLocked;
-
+//    bool shuffleLocked;
+    Barrier barrier;
+    sem_t sortedQueueSem;
 
 
 };
