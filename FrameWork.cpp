@@ -4,16 +4,7 @@
 
 
 #include "FrameWork.h"
-//#include "ErrorCodes.h"
-//#include "Barrier.h"
 
-//#include <semaphore.h>
-//#include <atomic>
-
-//struct ThreadContext{
-//    ThreadContext(int t_index);
-//
-//}
 
 
 threadWork(void * arg) {
@@ -106,10 +97,9 @@ ErrorCode FrameWork::run() {
 FrameWork::~FrameWork() {
 //    return;
 }
-
-
+//
 //void* FrameWork::threadWork(void * arg) {
-//    Context* contextPtr  = static_cast<Context*> (arg);
+//    int* t_index_ptr  = static_cast<int*> (arg);
 //
 //    //Hungry map loop
 //    unsigned long old_value = 0;
@@ -118,13 +108,13 @@ FrameWork::~FrameWork() {
 //        old_value = atomic_counter++;
 //        client.map(inputVec.at(old_value).first,
 //                   inputVec.at(old_value).second,
-//                   static_cast<void *>(&threadContextVec[*contextPtr->tindex]));
+//                   static_cast<void *>(&threadContextVec[*t_index_ptr]));
 //    }
 //
 //    // intermediate vector assumed to be populated at this point
 //
 //    // Sorting Stage - No mutually shared objects
-//    threadContextVec[*contextPtr].sort();
+//    threadContextVec[*t_index_ptr].sort();
 //
 //    // Barrier for all threads
 //    this->barrier.barrier();

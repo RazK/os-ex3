@@ -32,7 +32,7 @@ public:
 
 
 private:
-//    void * threadWork(void * arg);
+//    void* threadWork(void * context);
 
 //    std::vector<Context> threadContextVec;
 
