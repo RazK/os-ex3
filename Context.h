@@ -18,17 +18,13 @@ public:
     Context();
     ~Context();
 
-    int getTid();
-
-    ErrorCode append(IntermediatePair);
+    void append(IntermediatePair pair);
 
     void sort();
 
 private:
 //    IntermediateVec* emit2Accumulator;
     IntermediateVec emit2Accumulator;
-    int tid;
-
 };
 
 
