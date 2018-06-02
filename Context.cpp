@@ -4,23 +4,40 @@
 #include "Context.h"
 #include <algorithm>    // std::sort
 
-Context::Context(Context(std::atomic<bool> const & suffleLocked, Barrier const & shuffleBarrier)) :
-        shuffleLocked(shuffleLocked),
-        shuffleBarrier(shuffleBarrier),
-        emit2Accumulator(new IntermediateVec()) {}
+Context::Context(const MapReduceClient& client,
+                 const InputVec& inputVec, OutputVec& outputVec,
+                 int multiThreadLevel) :
+        client(client),
+        numOfIntermediatesVecs(multiThreadLevel),
+        inputVec(inputVec),
+        outputVec(outputVec),
+        shuffleBarrier(multiThreadLevel),
+        shuffleLocked(false){
+    // Initialize shuffle mutex
+    pthread_mutex_init(&shuffleMutex, NULL);
+
+    // Initialize empty intermediate pairs
+    for (int i = 0; i < numOfIntermediatesVecs; i++){
+        this->intermedVecs[i] = new std::vector<IntermediatePair>();
+    }
+
+}
 
 Context::~Context() {
-    delete this->emit2Accumulator;
+    // Delete all intermediate pairs
+    for (int i = 0; i < numOfIntermediatesVecs; i++){
+        delete this->intermedVecs[i];
+    }
+
+    // Destroy shuffle mutex
+    pthread_mutex_destroy(&shuffleMutex);
 }
 
-void Context::sort() {
-
-//    std::sort(this->emit2Accumulator.begin(), this->emit2Accumulator.end());
-//    std::sort(std::vector<int>)
-
+void Context::sort(tindex i) {
+    std::sort(this->intermedVecs[i]->begin(), this->intermedVecs[i]->end());
 }
 
 
-void Context::append(const IntermediatePair& pair) {
-    this->emit2Accumulator->push_back(pair);
+void Context::append(tindex i, const IntermediatePair& pair) {
+    this->intermedVecs[i]->push_back(pair);
 }
