@@ -17,14 +17,10 @@ public:
     Context();
     ~Context();
 
-    int getTid();
-
-    ErrorCode append(IntermediatePair);
+    void append(IntermediatePair pair);
 
 private:
     IntermediateVec* emit2Accumulator;
-    int tid;
-
 };
 
 
