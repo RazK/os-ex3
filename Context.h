@@ -14,7 +14,7 @@
 class Context{
 
 public:
-    Context(int tid);
+    Context();
     ~Context();
 
     int getTid();
