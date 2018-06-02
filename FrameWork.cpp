@@ -41,6 +41,7 @@ threadWork(void * arg) {
         //Todo: Remember to send
 
     }
+}
 
 
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
