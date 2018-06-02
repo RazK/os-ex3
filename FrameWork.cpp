@@ -10,6 +10,11 @@
 //#include <semaphore.h>
 //#include <atomic>
 
+//struct ThreadContext{
+//    ThreadContext(int t_index);
+//
+//}
+
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
                      int multiThreadLevel)
 : client(client),
@@ -20,7 +25,7 @@ FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, Ou
   atomic_counter(0),
   shuffleLocked(false),
   threadPool(new pthread_t[multiThreadLevel]),
-  barrier(Barrier(multiThreadLevel)),
+  barrier(Barrier(multiThreadLevel))
 //  sortedQueueSem()
 
 {
@@ -43,7 +48,7 @@ ErrorCode FrameWork::run() {
 
         //    Spawn threads on work function
     for (int t_index=0; t_index<this->numOfThreads; t_index++){
-        if ((pthread_create(&threadPool[t_index], NULL, FrameWork::threadWork, (void *)t_index)) !=
+        if ((pthread_create(&threadPool[t_index], NULL, this->threadWork, (void *)t_index)) !=
             ErrorCode::SUCCESS)
         {
             printf("ERROR\n");
@@ -66,7 +71,7 @@ FrameWork::~FrameWork() {
 }
 
 void* FrameWork::threadWork(void * arg) {
-    int t_index  = static_cast<int> (arg);
+    int* t_index_ptr  = static_cast<int*> (arg);
 
     //Hungry map loop
     unsigned long old_value = 0;
@@ -75,13 +80,13 @@ void* FrameWork::threadWork(void * arg) {
         old_value = atomic_counter++;
         client.map(inputVec.at(old_value).first,
                    inputVec.at(old_value).second,
-                   static_cast<void *>(&threadContextVec[t_index]));
+                   static_cast<void *>(&threadContextVec[*t_index_ptr]));
     }
 
     // intermediate vector assumed to be populated at this point
 
     // Sorting Stage - No mutually shared objects
-    threadContextVec[t_index].sort();
+    threadContextVec[*t_index_ptr].sort();
 
     // Barrier for all threads
     this->barrier.barrier();
@@ -105,5 +110,6 @@ void* FrameWork::threadWork(void * arg) {
 
 
 
-    return static_cast<void *>(ErrorCode::FAIL);
+//    return static_cast<void *>(ErrorCode::FAIL);
+    return NULL;
 }

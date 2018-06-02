@@ -12,7 +12,7 @@ Context::~Context() {
 
 void Context::sort() {
 
-    std::sort(this->emit2Accumulator.begin(), this->emit2Accumulator.end());
+//    std::sort(this->emit2Accumulator.begin(), this->emit2Accumulator.end());
 //    std::sort(std::vector<int>)
 
 }
