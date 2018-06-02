@@ -1,8 +1,10 @@
 #include "MapReduceFramework.h"
 #include "ErrorCodes.h"
+#include "Context.h"
 #include <cstdio>
 #include <string>
 #include <array>
+#include <iostream>
 
 class VString : public V1 {
 public:
@@ -35,17 +37,20 @@ public:
 		std::array<int, 256> counts;
 		counts.fill(0);
 		for(const char& c : static_cast<const VString*>(value)->content) {
-			counts[(unsigned char) c]++;
+			//counts[(unsigned char) c]++;
+            KChar* k2 = new KChar(c);
+            VCount* v2 = new VCount(1);
+            emit2(k2, v2, context);
 		}
 
-		for (int i = 0; i < 256; ++i) {
-			if (counts[i] == 0)
-				continue;
-
-			KChar* k2 = new KChar(i);
-			VCount* v2 = new VCount(counts[i]);
-			emit2(k2, v2, context);
-		}
+//		for (int i = 0; i < 256; ++i) {
+//			if (counts[i] == 0)
+//				continue;
+//
+//			KChar* k2 = new KChar(i);
+//			VCount* v2 = new VCount(counts[i]);
+//			emit2(k2, v2, context);
+//		}
 	}
 
 	virtual void reduce(const IntermediateVec* pairs, 
@@ -66,6 +71,30 @@ public:
 
 int main(int argc, char** argv)
 {
-	PRINT_ERR(ErrorCode::SUCCESS);
+    CounterClient client;
+//    InputVec inputVec;
+//    OutputVec outputVec;
+    VString s1("This string is full of characters");
+//    VString s2("Multithreading is awesome");
+//    VString s3("conditions are race bad");
+//    inputVec.push_back({nullptr, &s1});
+//    inputVec.push_back({nullptr, &s2});
+//    inputVec.push_back({nullptr, &s3});
+    Context* context = new Context();
+    client.map(nullptr, &s1, context);
+    for (auto pair : *context->emit2Accumulator){
+        std::cout << reinterpret_cast<KChar*>(pair.first)->c << " : " << reinterpret_cast<VCount*>(pair.second)->count << std::endl;
+    }
+
+//    for (OutputPair& pair: outputVec) {
+//        char c = ((const KChar*)pair.first)->c;
+//        int count = ((const VCount*)pair.second)->count;
+//        printf("The character %c appeared %d time%s\n",
+//               c, count, count > 1 ? "s" : "");
+//        delete pair.first;
+//        delete pair.second;
+//    }
+//
+//    return 0;
 }
 

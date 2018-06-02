@@ -17,9 +17,9 @@ public:
     Context();
     ~Context();
 
-    void append(IntermediatePair pair);
+    void append(const IntermediatePair& pair);
 
-private:
+//private:
     IntermediateVec* emit2Accumulator;
 };
 
