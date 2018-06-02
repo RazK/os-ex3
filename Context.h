@@ -10,6 +10,7 @@
 #include "Barrier.h"
 #include <algorithm>    // std::sort
 #include <atomic>
+#include <semaphore.h>
 //#include <vector> //sdt:vec
 //#include <utility> //std:pair
 
@@ -32,9 +33,12 @@ public:
     IntermediateVec * intermedVecs;
     OutputVec & outputVec;
 
-    Barrier shuffleBarrier;
+    Barrier barrier;
     pthread_mutex_t shuffleMutex;
+    pthread_mutex_t outVecMutex;
     std::atomic<bool> shuffleLocked;
+    std::atomic<unsigned long> counter;
+    sem_t queueSem;
 };
 
 
