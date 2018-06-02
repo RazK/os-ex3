@@ -5,10 +5,10 @@
 #ifndef CONTEXT_H
 #define CONTEXT_H
 
-#include <atomic>
 #include "MapReduceClient.h"
 #include "ErrorCodes.h"
 #include "Barrier.h"
+#include <algorithm>    // std::sort
 //#include <vector> //sdt:vec
 //#include <utility> //std:pair
 
@@ -16,15 +16,14 @@
 class Context{
 
 public:
-    Context(std::atomic<bool> const & suffleLocked, Barrier const & shuffleBarrier);
+    Context();
     ~Context();
 
     void append(const IntermediatePair& pair);
+    void sort();
 
 //private:
     IntermediateVec* emit2Accumulator;
-    std::atomic<bool> const & shuffleLocked;
-    Barrier const & shuffleBarrier;
 };
 
 

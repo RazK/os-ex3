@@ -10,7 +10,11 @@
 
 #include "Context.h"
 #include "ErrorCodes.h"
+#include "Barrier.h"
 #include <pthread.h>
+
+#include <semaphore.h>
+#include <atomic>
 
 #include <vector> //sdt:vec
 #include <utility> //std:pair
@@ -28,21 +32,24 @@ public:
 
 
 private:
-    ErrorCode threadWork();
+    void* threadWork(void * context);
 
 //    std::vector<Context> threadContextVec;
-    std::vector<pthread_t> threadPool;
 
-    std::atomic<bool> shuffleLocked;
-    Barrier shuffleBarrier;
+
     const MapReduceClient& client;
     const InputVec& inputVec;
     OutputVec& outputVec;
     int numOfThreads;
     Context* threadContextVec;
 
-
-//    int multiThreadLevel;
+    std::atomic<unsigned long> atomic_counter;
+    std::atomic<bool> shuffleLocked;
+//    std::vector<pthread_t> threadPool;
+    pthread_t* threadPool;
+//    bool shuffleLocked;
+    Barrier barrier;
+    sem_t sortedQueueSem;
 
 
 };
