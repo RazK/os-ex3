@@ -34,7 +34,7 @@ public:
 
     std::vector<IntermediateVec> readyQueue;
 
-    IntermediateVec * intermedVecs[];
+    IntermediateVec ** intermedVecs;
     OutputVec & outputVec;
 
     Barrier barrier;

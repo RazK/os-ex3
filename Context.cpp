@@ -23,7 +23,6 @@ Context::Context(const MapReduceClient& client,
         printf("ERROR\n");
         exit(1);
     }
-//    pthread_mutex_init(&shuffleMutex, nullptr);
 
     // Initialize empty intermediate pairs
     for (int i = 0; i < numOfIntermediatesVecs; i++){
