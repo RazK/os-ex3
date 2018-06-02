@@ -6,6 +6,7 @@
 #define CONTEXT_H
 
 #include "MapReduceClient.h"
+#include "ErrorCodes.h"
 //#include <vector> //sdt:vec
 //#include <utility> //std:pair
 
