@@ -29,6 +29,8 @@ public:
     const int numOfIntermediatesVecs;
     const MapReduceClient & client;
 
+
+
     const InputVec & inputVec;
     IntermediateVec * intermedVecs[];
     OutputVec & outputVec;

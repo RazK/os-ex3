@@ -14,7 +14,7 @@ Context::Context(const MapReduceClient& client,
         barrier(multiThreadLevel),
         shuffleLocked(false){
     // Initialize shuffle mutex
-    pthread_mutex_init(&shuffleMutex, NULL);
+    pthread_mutex_init(&shuffleMutex, nullptr);
 
     // Initialize empty intermediate pairs
     for (int i = 0; i < numOfIntermediatesVecs; i++){
