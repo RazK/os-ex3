@@ -23,12 +23,13 @@ void emit3 (K3* key, V3* value, void* context){
     // All threads want to use the OutputVector
     // Lock the mutex for access
     if (pthread_mutex_lock(&threadContext->outVecMutex) != 0){
-        fprintf(stderr, "ERROR\n");
+        fprintf(stderr, "Error: Failure to lock the mutex in emit3.\n");
         exit(1);
     }
     threadContext->outputVec.push_back(pair);
+
     if (pthread_mutex_unlock(&threadContext->outVecMutex) != 0){
-        fprintf(stderr, "ERROR\n");
+        fprintf(stderr, "Error: Failure to unlock the mutex in emit3.\n");
         exit(1);
     }
 
@@ -42,7 +43,7 @@ void runMapReduceFramework(const MapReduceClient& client,
                            int multiThreadLevel){
     FrameWork framework(client, inputVec, outputVec, multiThreadLevel);
     if (framework.run() != ErrorCode::SUCCESS){
-        printf( "Error\n");
+        fprintf(stderr, "Error: Failure in run function. Run in debug.\n");
         exit(1);
     }
 }

@@ -17,6 +17,7 @@ set(SOURCE_FILES
         MapReduceFramework.cpp
         Barrier.cpp
         Barrier.h
-        TestClient.cpp)
+        TestClient.cpp
+        SampleClient.cpp)
 
 add_executable(os_ex3 ${SOURCE_FILES})

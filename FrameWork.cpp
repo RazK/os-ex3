@@ -39,7 +39,7 @@ void * threadWork(void * contextWrapper) {
 
     //After Barrier.One thread becomes shuffler
     if(pthread_mutex_lock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
-        printf("Error\n");
+        fprintf(stderr, "Error: Mutex lock failure in shuffle thread, after barrier.\n");
         exit(1);
     }
 
@@ -49,7 +49,7 @@ void * threadWork(void * contextWrapper) {
         sem_wait(&context->queueSem);
         // Let the rest of the threads run
         if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
-            printf("Error\n");
+            fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
             exit(1);
         }
         for (int tid=0; tid<context->numOfIntermediatesVecs; tid++){
@@ -71,14 +71,14 @@ void * threadWork(void * contextWrapper) {
         // Wait for the shuffler to populate queue. Signal comes through semaphore
         if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
         {
-            printf("Error\n");
+            fprintf(stderr, "Error: Semaphore failure in waiting thread.\n");
             exit(1);
         }
 
         // Lock the mutex to access mutual queue
         if (pthread_mutex_lock(&context->queueMutex) != ErrorCode::SUCCESS)
         {
-            printf("Error\n");
+            fprintf(stderr, "Error: Mutex lock failure in waiting thread.\n");
             exit(1);
         }
         // retrieve next job and pop it from the list
@@ -86,7 +86,7 @@ void * threadWork(void * contextWrapper) {
         context->readyQueue.pop_back();
         if (pthread_mutex_unlock(&context->queueMutex) != ErrorCode::SUCCESS)
         {
-            printf("Error\n");
+            fprintf(stderr, "Error: Mutex unlock failure in waiting thread.\n");
             exit(1);
         }
         context->client.reduce(&job, contextWrapper);
@@ -115,7 +115,7 @@ FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, Ou
     // init semaphore for ready queue sharing
     if (sem_init(&sortedQueueSem, 0, 0) != ErrorCode::SUCCESS)
     {
-        printf("ERROR\n");
+        fprintf(stderr, "Error: Semaphore failure for queue sharing.\n");
         exit(1);
     }
 
@@ -129,22 +129,22 @@ FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, Ou
 ErrorCode FrameWork::run() {
     ErrorCode status[numOfThreads];
 
-        //    Spawn threads on work function
+    //    Spawn threads on work function
     for (int t_index=0; t_index<this->numOfThreads; t_index++){
         if ((pthread_create(&threadPool[t_index], nullptr, threadWork, (void *)t_index)) !=
-            ErrorCode::SUCCESS)
-        {
-            printf("ERROR\n");
-            exit(-1); }
+            ErrorCode::SUCCESS) {
+            fprintf(stderr, "Error: Failure to spawn new thread in run.\n");
+            exit(-1);
         }
+    }
 
-        //    Join all threads back into 1
+    //    Join all threads back into 1
     for (int t_index=0; t_index<this->numOfThreads; t_index++){
-        if (pthread_join(threadPool[t_index], (void **)&status[t_index]) != ErrorCode::SUCCESS)
-        {
-            printf("ERROR\n");
-            exit(-1); }
+        if (pthread_join(threadPool[t_index], (void **)&status[t_index]) != ErrorCode::SUCCESS) {
+            fprintf(stderr, "Error: Failure to join threads in run.\n");
+            exit(-1);
         }
+    }
 
     return SUCCESS;
 }
