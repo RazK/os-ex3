@@ -5,7 +5,6 @@
 
 #include "FrameWork.h"
 #include <pthread.h>
-#include <set>
 
 ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
 
@@ -29,7 +28,9 @@ void * threadWork(void * contextWrapper) {
                                                 context->inputVec.at(old_value).second,
                                                 contextWrapper);
     }
+
     // intermediate vector assumed to be populated at this point
+
     // Sorting Stage - No mutually shared objects
     context->sort(threadIndex);
 
@@ -38,7 +39,7 @@ void * threadWork(void * contextWrapper) {
 
     //After Barrier.One thread becomes shuffler
     if(pthread_mutex_lock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
-        printf("Error\n");
+        fprintf(stderr, "Error: Mutex lock failure in shuffle thread, after barrier.\n");
         exit(1);
     }
 
@@ -48,7 +49,7 @@ void * threadWork(void * contextWrapper) {
         sem_wait(&context->queueSem);
         // Let the rest of the threads run
         if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
-            printf("Error\n");
+            fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
             exit(1);
         }
 
@@ -65,7 +66,39 @@ void * threadWork(void * contextWrapper) {
         //Todo: Shuffle phase - raz.. shine
         //Todo: Remember to send signal via semaphore. whenever the queue is read,
         // use sem_post(context->queueSem)
+
+
+
+        context->shuffleLocked = false;
     }
+    // All threads continue here. ShuffleLocked represents the shuffler is still working
+    while(context->shuffleLocked && not context->readyQueue.empty()){
+        // Wait for the shuffler to populate queue. Signal comes through semaphore
+        if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
+        {
+            fprintf(stderr, "Error: Semaphore failure in waiting thread.\n");
+            exit(1);
+        }
+
+        // Lock the mutex to access mutual queue
+        if (pthread_mutex_lock(&context->queueMutex) != ErrorCode::SUCCESS)
+        {
+            fprintf(stderr, "Error: Mutex lock failure in waiting thread.\n");
+            exit(1);
+        }
+        // retrieve next job and pop it from the list
+        IntermediateVec job = context->readyQueue.back();
+        context->readyQueue.pop_back();
+        if (pthread_mutex_unlock(&context->queueMutex) != ErrorCode::SUCCESS)
+        {
+            fprintf(stderr, "Error: Mutex unlock failure in waiting thread.\n");
+            exit(1);
+        }
+        context->client.reduce(&job, contextWrapper);
+
+
+    }
+
 }
 
 
@@ -85,7 +118,7 @@ FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, Ou
     // init semaphore for ready queue sharing
     if (sem_init(&sortedQueueSem, 0, 0) != ErrorCode::SUCCESS)
     {
-        printf("ERROR\n");
+        fprintf(stderr, "Error: Semaphore failure for queue sharing.\n");
         exit(1);
     }
 
@@ -99,22 +132,22 @@ FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, Ou
 ErrorCode FrameWork::run() {
     ErrorCode status[numOfThreads];
 
-        //    Spawn threads on work function
+    //    Spawn threads on work function
     for (int t_index=0; t_index<this->numOfThreads; t_index++){
         if ((pthread_create(&threadPool[t_index], nullptr, threadWork, (void *)t_index)) !=
-            ErrorCode::SUCCESS)
-        {
-            printf("ERROR\n");
-            exit(-1); }
+            ErrorCode::SUCCESS) {
+            fprintf(stderr, "Error: Failure to spawn new thread in run.\n");
+            exit(-1);
         }
+    }
 
-        //    Join all threads back into 1
+    //    Join all threads back into 1
     for (int t_index=0; t_index<this->numOfThreads; t_index++){
-        if (pthread_join(threadPool[t_index], (void **)&status[t_index]) != ErrorCode::SUCCESS)
-        {
-            printf("ERROR\n");
-            exit(-1); }
+        if (pthread_join(threadPool[t_index], (void **)&status[t_index]) != ErrorCode::SUCCESS) {
+            fprintf(stderr, "Error: Failure to join threads in run.\n");
+            exit(-1);
         }
+    }
 
     return SUCCESS;
 }

@@ -12,15 +12,26 @@ Context::Context(const MapReduceClient& client,
         inputVec(inputVec),
         outputVec(outputVec),
         barrier(multiThreadLevel),
-        shuffleLocked(false)
+        shuffleLocked(false),
+        counter(0)
 {
     // Initialize multiple mutexes
     if (pthread_mutex_init(&shuffleMutex, nullptr) != ErrorCode::SUCCESS){
-        printf("ERROR\n");
+        fprintf(stderr, "Error: Failure to init mutex in Context init.\n");
         exit(1);
     }
     if (pthread_mutex_init(&outVecMutex, nullptr) != ErrorCode::SUCCESS){
-        printf("ERROR\n");
+        fprintf(stderr, "Error: Failure to init mutex in Context init.\n");
+        exit(1);
+    }
+    if (pthread_mutex_init(&queueMutex, nullptr) != ErrorCode::SUCCESS){
+        fprintf(stderr, "Error: Failure to init mutex in Context init.\n");
+        exit(1);
+    }
+
+    // init semaphore
+    if (sem_init(&queueSem, 0, 0) != ErrorCode::SUCCESS){
+        fprintf(stderr, "Error: Failure to init semaphore in Context init.\n");
         exit(1);
     }
 
@@ -39,13 +50,22 @@ Context::~Context() {
 
     // Destroy shuffle mutex
     if (pthread_mutex_destroy(&shuffleMutex) != ErrorCode::SUCCESS){
-        printf("ERROR\n");
+        fprintf(stderr, "Error: Failure destroy a mutex in Context dtor.\n");
         exit(1);
     }
     if (pthread_mutex_destroy(&outVecMutex) != ErrorCode::SUCCESS){
-        printf("ERROR\n");
+        fprintf(stderr, "Error: Failure destroy a mutex in Context dtor.\n");
         exit(1);
     }
+    if (pthread_mutex_destroy(&queueMutex) != ErrorCode::SUCCESS){
+        fprintf(stderr, "Error: Failure destroy a mutex in Context dtor.\n");
+        exit(1);
+    }
+    if (sem_destroy(&queueSem) != ErrorCode::SUCCESS){
+        fprintf(stderr, "Error: Failure destroy semaphore in Context dtor.\n");
+        exit(1);
+    }
+
 }
 
 void Context::sort(const tindex i) {
