@@ -38,14 +38,14 @@ public:
 
 
 private:
-    const MapReduceClient& client;
+//    const MapReduceClient& client;
     int numOfThreads;
-    std::atomic<unsigned long> atomic_counter;
-    const InputVec& inputVec;
-    OutputVec& outputVec;
-    std::atomic<bool> shuffleLocked;
-    Barrier barrier;
-    sem_t sortedQueueSem;
+//    std::atomic<unsigned long> atomic_counter;
+//    const InputVec& inputVec;
+//    OutputVec& outputVec;
+//    std::atomic<bool> shuffleLocked;
+//    Barrier barrier;
+//    sem_t sortedQueueSem;
     pthread_t* threadPool;
     Context context;
 
