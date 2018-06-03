@@ -46,7 +46,7 @@ void * threadWork(void * contextWrapper) {
     if (context->shuffleLocked == false){
         // lock for the rest of the threads
         context->shuffleLocked = true;
-//        sem_wait(&context->queueSem);
+//        sem_wait(&context->queueSem); // TODO: Commented out for compilation, resolve this
         // Let the rest of the threads run
         if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
             fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
@@ -65,6 +65,7 @@ void * threadWork(void * contextWrapper) {
         uniKeys.resize((long)std::distance(uniKeys.begin(), it) ); // 10 20 30 20 10
 
         // Go over ordered unique keys, foreach pop all pairs with this key from all vectors and launch reducer
+        // DEBUG: Assuming keys in uniKeys are ordered just like in intermedVecs, i.e. uniKeys.back() is last in intermedVecs as well
         while(!uniKeys.empty()){
             // Get current key and extract all its pairs from all vectors
             K2* currKey = uniKeys.back();
