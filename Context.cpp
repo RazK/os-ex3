@@ -7,8 +7,8 @@
 Context::Context(const MapReduceClient& client,
                  const InputVec& inputVec, OutputVec& outputVec,
                  int multiThreadLevel) :
-        client(client),
         numOfIntermediatesVecs(multiThreadLevel),
+        client(client),
         inputVec(inputVec),
         outputVec(outputVec),
         barrier(multiThreadLevel),
@@ -72,8 +72,13 @@ Context::~Context() {
 
 }
 
-void Context::sort(const tindex i) {
+void Context::prepareForShuffle(const tindex i) {
+    // Sort intermediate vecotr
     std::sort(this->intermedVecs[i]->begin(), this->intermedVecs[i]->end());
+    // List all unique keys (will be used for shuffle)
+    IntermediateVec pairsUniqueByKey;
+    std::unique_copy(this->intermedVecs[i]->begin(), this->intermedVecs[i]->end(), back_inserter(pairsUniqueByKey));
+    std::transform(pairsUniqueByKey.begin(), pairsUniqueByKey.end(), back_inserter(*this->uniqueK2Vecs[i]), [](IntermediatePair& pair){return pair.first;});
 }
 
 

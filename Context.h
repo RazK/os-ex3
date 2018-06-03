@@ -27,7 +27,7 @@ public:
     ~Context();
 
     void append(tindex i, const IntermediatePair& pair);
-    void sort(tindex i);
+    void prepareForShuffle(tindex i);
 
     const int numOfIntermediatesVecs;
     const MapReduceClient & client;
@@ -36,7 +36,7 @@ public:
 
     std::vector<IntermediateVec> readyQueue;
 
-    IntermediateKeySet ** uniqueK2set; // TODO: Initialize after sort
+    IntermediateUniqueKeysVec ** uniqueK2Vecs;
     IntermediateVec ** intermedVecs;
 
     OutputVec & outputVec;

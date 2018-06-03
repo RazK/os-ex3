@@ -15,7 +15,7 @@ ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
 
 
 void * threadWork(void * contextWrapper) {
-    auto contextWrapperPtr  = static_cast<ContextWrapper*> (contextWrapper);
+    auto contextWrapperPtr = static_cast<ContextWrapper*> (contextWrapper);
     int threadIndex = contextWrapperPtr->threadIndex;
     Context* context = contextWrapperPtr->context;
 
@@ -32,7 +32,7 @@ void * threadWork(void * contextWrapper) {
     // intermediate vector assumed to be populated at this point
 
     // Sorting Stage - No mutually shared objects
-    context->sort(threadIndex);
+    context->prepareForShuffle(threadIndex);
 
     // Barrier for all threads
     context->barrier.barrier();
@@ -46,25 +46,47 @@ void * threadWork(void * contextWrapper) {
     if (context->shuffleLocked == false){
         // lock for the rest of the threads
         context->shuffleLocked = true;
-
+//        sem_wait(&context->queueSem);
         // Let the rest of the threads run
         if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
             fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
             exit(1);
         }
-        for (int tid=0; tid<context->numOfIntermediatesVecs; tid++){
 
-        // Find all unique keys in all intermediate vectors
-        IntermediateKeySet uniKeys;
+        // Collect all unique keys from all intermediate unique keys vectors
+        IntermediateUniqueKeysVec uniKeys;
         for (int i = 0; i < context->numOfIntermediatesVecs; i++) {
-            for (const auto &key : *context->uniqueK2set[i]) {
-                uniKeys.insert(key);
-            }
+            std::copy(context->uniqueK2Vecs[i]->begin(), context->uniqueK2Vecs[i]->end(), back_inserter(uniKeys));   // 10 20 30 20 10 0  0  0  0
         }
+        // Unify into single vector of ordered unique keys
+        std::sort(uniKeys.begin(), uniKeys.end());
+        IntermediateUniqueKeysVec::iterator it;
+        it = std::unique (uniKeys.begin(), uniKeys.end());   // 10 20 30 20 10 ?  ?  ?  ?
+        uniKeys.resize((long)std::distance(uniKeys.begin(), it) ); // 10 20 30 20 10
 
-        // Todo: use context->queueSem.incSize();
+        // Go over ordered unique keys, foreach pop all pairs with this key from all vectors and launch reducer
+        while(!uniKeys.empty()){
+            // Get current key and extract all its pairs from all vectors
+            K2* currKey = uniKeys.back();
+            uniKeys.pop_back();
+            auto * keySpecificVec = new IntermediateVec(); // TODO: Free at the end of reducer's procedure
+            // Go over all intermediate vectors
+            for (int j = 0; j < context->numOfIntermediatesVecs; j++) {
+                // Extract all pairs with current key (if has any)
+                while ((!context->intermedVecs[j]->empty()) && context->intermedVecs[j]->back().first == currKey){
+                    keySpecificVec->push_back(context->intermedVecs[j]->back());
+                    context->intermedVecs[j]->pop_back();
+                }
+            }
+            // All pairs with current key were processed into keySpecificVec - ready to reduce!
+            // LAUNCH REDUCER ON CURRENT KEY-SPECIFIC-VECTOR
+            context->readyQueue.push_back(*keySpecificVec);
+            // and party
+            //Todo: Remember to send signal via semaphore. whenever the queue is read,
+            // use sem_post(context->queueSem)
+            // TODO: Shimmy: Implement your semaphore signal HERE
 
-        // This notifies all threads shuffle stage is over.
+        }
         context->shuffleLocked = false;
     }
     // All threads continue here. ShuffleLocked represents the shuffler is still working

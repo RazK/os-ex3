@@ -2,6 +2,8 @@
 // Created by Shimon Heimowitz on 02/06/2018.
 //
 
+#include <cstdio>
+#include <cstdlib>
 #include "Semaphore.h"
 #include "ErrorCodes.h"
 
