@@ -30,7 +30,7 @@ void * threadWork(void * contextWrapper) {
 
     //Hungry map loop
     unsigned long old_value = 0;
-    while(context->counter < context->inputVec.size())
+    while(context->counter < context->inputSize)
     {
         old_value = context->counter++; //atomic
         context->client.map( context->inputVec[old_value].first,
@@ -63,7 +63,6 @@ void * threadWork(void * contextWrapper) {
         // lock for the rest of the threads
         context->shuffleState = ShuffleState::IN_SHUFFLE;
 
-//        sem_wait(&context->queueSem); // TODO: Commented out for compilation, resolve this
         // Let the rest of the threads run
         if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
             fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
@@ -73,7 +72,7 @@ void * threadWork(void * contextWrapper) {
         // Collect all unique keys from all intermediate unique keys vectors
         IntermediateUniqueKeysVec uniKeys; // Example: uniqueK2Vecs = {[1,2,3], [2,3], [1,3]}
         for (int i = 0; i < context->numOfIntermediatesVecs; i++) {
-            std::copy(context->uniqueK2Vecs[i]->begin(), context->uniqueK2Vecs[i]->end(), back_inserter(uniKeys));   // 10 20 30 20 10 0  0  0  0
+            std::copy(context->uniqueK2Vecs[i].begin(), context->uniqueK2Vecs[i].end(), back_inserter(uniKeys));   // 10 20 30 20 10 0  0  0  0
         }
         // Unify into single vector of ordered unique keys
         std::sort(uniKeys.begin(), uniKeys.end());
@@ -91,19 +90,19 @@ void * threadWork(void * contextWrapper) {
             // Go over all intermediate vectors
             for (int j = 0; j < context->numOfIntermediatesVecs; j++) {
                 // Extract all pairs with current key (if has any)
-                while ((!context->intermedVecs[j]->empty()) && context->intermedVecs[j]->back().first == currKey){
-                    keySpecificVec.push_back(context->intermedVecs[j]->back());
-                    context->intermedVecs[j]->pop_back();
+                while ((!context->intermedVecs[j].empty()) && context->intermedVecs[j].back().first == currKey){
+                    keySpecificVec.push_back(context->intermedVecs[j].back());
+                    context->intermedVecs[j].pop_back();
                 }
             }
             // All pairs with current key were processed into keySpecificVec - ready to reduce!
             // LAUNCH REDUCER ON CURRENT KEY-SPECIFIC-VECTOR
             context->readyQueue.push_back(keySpecificVec);
 
-//             sem_post(context->queueSem);
+             sem_post(&context->queueSem);
 
 //             TODO: Shimmy: Implement your semaphore signal HERE
-            context->queueSem.incSize();
+//            context->queueSem.incSize();
 
         }
         context->shuffleState = ShuffleState::DONE_SHUFFLING;
@@ -116,13 +115,13 @@ void * threadWork(void * contextWrapper) {
     // All threads continue here. ShuffleLocked represents the shuffler is still working
     while(context->shuffleState || not context->readyQueue.empty()){
         // Wait for the shuffler to populate queue. Signal comes through semaphore
-//        if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
-//        {
-//            fprintf(stderr, "Error: Semaphore failure in waiting thread.\n");
-//            exit(1);
-//        }
-        context->queueSem.aquire();
-        context->queueSem.decSize();
+        if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
+        {
+            fprintf(stderr, "Error: Semaphore failure in waiting thread.\n");
+            exit(1);
+        }
+//        context->queueSem.aquire();
+//        context->queueSem.decSize();
 
         // Lock the mutex to access mutual queue
         if (pthread_mutex_lock(&context->queueMutex) != ErrorCode::SUCCESS)

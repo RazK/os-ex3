@@ -47,11 +47,12 @@ public:
     const MapReduceClient & client;
     OutputVec & outputVec;
 
-    IntermediateVec ** intermedVecs; // Map result vectors
-    IntermediateUniqueKeysVec ** uniqueK2Vecs; // Unique keys
+    IntermediateVec * intermedVecs; // Map result vectors
+    IntermediateUniqueKeysVec * uniqueK2Vecs; // Unique keys
 
     std::vector<IntermediateVec> readyQueue;
 
+    const unsigned long inputSize;
     Barrier barrier;
     pthread_mutex_t shuffleMutex;
     pthread_mutex_t outVecMutex;
@@ -60,8 +61,8 @@ public:
     std::atomic<ShuffleState> shuffleState;
     std::atomic<unsigned long> counter;
 
-//    sem_t queueSem; //deprecated
-    Semaphore queueSem;
+    sem_t queueSem; //deprecated
+//    Semaphore queueSem;
 
 };
 
