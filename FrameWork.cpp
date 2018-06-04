@@ -21,7 +21,11 @@ bool K2equals(const K2 *key1, const K2 *key2){
     return !((*key1 < *key2) || (*key2 < *key1));
 }
 
-bool K2lessthan(const IntermediatePair &p1, const IntermediatePair &p2){
+bool K2lessthan(const K2 *key1, const K2 *key2){
+    return *key1 < *key2;
+}
+
+bool Pair2lessthan(const IntermediatePair &p1, const IntermediatePair &p2){
     return *p1.first < *p2.first;
 }
 
