@@ -26,6 +26,8 @@ struct ContextWrapper {
     int threadIndex;
 };
 
+bool K2equal(const K2 *key1, const K2 *key2);
+
 class FrameWork{
 
 public:

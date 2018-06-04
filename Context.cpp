@@ -2,6 +2,7 @@
 // Created by razk on 02/06/18.
 //
 #include "Context.h"
+#include "FrameWork.h"
 #include <algorithm>    // std::sort
 
 Context::Context(const MapReduceClient& client,
@@ -83,9 +84,11 @@ void Context::prepareForShuffle(const tindex i) {
         std::sort(this->intermedVecs[i].begin(), this->intermedVecs[i].end());
 
         // List all unique keys (will be used for shuffle)
-        std::vector<K2*> intermediateKeysOnly;
-        std::transform(intermedVecs[i].begin(), intermedVecs[i].end(), back_inserter(intermediateKeysOnly), [](IntermediatePair& pair){return pair.first;});
-        std::unique_copy(intermediateKeysOnly.begin(), intermediateKeysOnly.end(), back_inserter(this->uniqueK2Vecs[i])); // TODO: Verifiy this is unique by keys and not by <key,val>
+        std::transform(intermedVecs[i].begin(), intermedVecs[i].end(), back_inserter(this->uniqueK2Vecs[i]), [](IntermediatePair& pair){return pair.first;});
+        IntermediateUniqueKeysVec::iterator it;
+        it = std::unique(this->uniqueK2Vecs[i].begin(), this->uniqueK2Vecs[i].end());
+        this->uniqueK2Vecs[i].resize((unsigned long)std::distance(this->uniqueK2Vecs[i].begin(), it));
+        // <key,val>
     }
 }
 

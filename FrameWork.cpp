@@ -17,10 +17,9 @@ ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
 
 }
 
-bool equal(K2* key1, K2* key2){
-    return !((key1 < key2) || (key2 < key1));
+bool K2equal(const K2 *key1, const K2 *key2){
+    return !((*key1 < *key2) || (*key2 < *key1));
 }
-
 
 void * threadWork(void * contextWrapper) {
     // Unpack contextWrapper
