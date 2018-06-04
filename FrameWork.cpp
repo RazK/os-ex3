@@ -21,6 +21,9 @@ bool K2equals(const K2 *key1, const K2 *key2){
     return !((*key1 < *key2) || (*key2 < *key1));
 }
 
+bool K2lessthan(const IntermediatePair &p1, const IntermediatePair &p2){
+    return *p1.first < *p2.first;
+}
 
 void * threadWork(void * contextWrapper) {
     // Unpack contextWrapper
@@ -79,9 +82,9 @@ void * threadWork(void * contextWrapper) {
             std::copy(context->uniqueK2Vecs[i].begin(), context->uniqueK2Vecs[i].end(), back_inserter(uniKeys));   // 10 20 30 20 10 0  0  0  0
         }
         // Unify into single vector of ordered unique keys
-        std::sort(uniKeys.begin(), uniKeys.end());
+        std::sort(uniKeys.begin(), uniKeys.end(), K2lessthan);
         IntermediateUniqueKeysVec::iterator it;
-        it = std::unique(uniKeys.begin(), uniKeys.end());   // 10 20 30 20 10 ?  ?  ?  ?
+        it = std::unique(uniKeys.begin(), uniKeys.end(), K2equals);   // 10 20 30 20 10 ?  ?  ?  ?
         uniKeys.resize((unsigned long)std::distance(uniKeys.begin(), it) ); // 10 20 30 20 10
 
         // Go over ordered unique keys, foreach pop all pairs with this key from all vectors and launch reducer
