@@ -53,13 +53,15 @@ public:
     std::vector<IntermediateVec> readyQueue;
 
     const unsigned long inputSize;
+    unsigned long uniqueK2Size;
     Barrier barrier;
     pthread_mutex_t shuffleMutex;
     pthread_mutex_t outVecMutex;
     pthread_mutex_t queueMutex;
 
     std::atomic<ShuffleState> shuffleState;
-    std::atomic<unsigned long> counter;
+    std::atomic<unsigned long> mapTaskCounter;
+    std::atomic<unsigned long> reduceTaskCounter;
 
     sem_t queueSem; //deprecated
 //    Semaphore queueSem;

@@ -21,6 +21,7 @@
 #include <utility> //std:pair
 
 struct ContextWrapper {
+    ContextWrapper();
     ContextWrapper(int threadIndex, Context* c);
     Context* context;
     int threadIndex;

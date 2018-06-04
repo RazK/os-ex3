@@ -13,9 +13,12 @@ Context::Context(const MapReduceClient& client,
         inputVec(inputVec),
         outputVec(outputVec),
         inputSize(inputVec.size()),
+        uniqueK2Size(0),
         barrier(multiThreadLevel),
         shuffleState(ShuffleState::WAITING_FOR_SHUFFLER),
-        counter(0)
+        mapTaskCounter(0),
+        reduceTaskCounter(0)
+
 //        , queueSem(0)
 {
     // Initialize multiple mutexes
@@ -60,15 +63,15 @@ Context::~Context() {
 
     // Destroy shuffle mutex
     if (pthread_mutex_destroy(&shuffleMutex) != ErrorCode::SUCCESS){
-        fprintf(stderr, "Error: Failure destroy a mutex in Context dtor.\n");
+        fprintf(stderr, "Error: Failure destroy a mutex 1 (for the shuffling stage) in Context dtor.\n");
         exit(1);
     }
     if (pthread_mutex_destroy(&outVecMutex) != ErrorCode::SUCCESS){
-        fprintf(stderr, "Error: Failure destroy a mutex in Context dtor.\n");
+        fprintf(stderr, "Error: Failure destroy a mutex 2 (for the output vec) in Context dtor.\n");
         exit(1);
     }
     if (pthread_mutex_destroy(&queueMutex) != ErrorCode::SUCCESS){
-        fprintf(stderr, "Error: Failure destroy a mutex in Context dtor.\n");
+        fprintf(stderr, "Error: Failure destroy a mutex 3(for readyqueue) in Context dtor.\n");
         exit(1);
     }
     if (sem_destroy(&queueSem) != ErrorCode::SUCCESS){
