@@ -119,7 +119,7 @@ void * threadWork(void * contextWrapper) {
      ************************************************/
 
     // All threads continue here. ShuffleLocked represents the shuffler is still working
-    while(context->shuffleState || not context->readyQueue.empty()){
+    while(ShuffleState::IN_SHUFFLE == context->shuffleState || not context->readyQueue.empty()){
         // Wait for the shuffler to populate queue. Signal comes through semaphore
         if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
         {
