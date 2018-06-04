@@ -82,7 +82,7 @@ Context::~Context() {
 void Context::prepareForShuffle(const tindex i) {
     // Sort intermediate vecotr
     if(!intermedVecs[i].empty()){
-        std::sort(this->intermedVecs[i].begin(), this->intermedVecs[i].end(), K2lessthan);
+        std::sort(this->intermedVecs[i].begin(), this->intermedVecs[i].end(), Pair2lessthan);
 
         // List all unique keys (will be used for shuffle)
         std::transform(intermedVecs[i].begin(), intermedVecs[i].end(), back_inserter(this->uniqueK2Vecs[i]), [](IntermediatePair& pair){return pair.first;});
