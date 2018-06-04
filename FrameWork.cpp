@@ -235,14 +235,14 @@ ErrorCode FrameWork::run() {
     // Join all none main threads back into 1
     for (int t_index = FIRST_NONMAIN_THREAD_INDEX; t_index<this->numOfThreads; t_index++){
         ErrorCode curStatus = ErrorCode::UNINITIALIZED;
-//        if (ErrorCode::SUCCESS != pthread_join(threadPool[t_index], (void**)&curStatus)) {
-//            fprintf(stderr, "Error: Failure to join threads in run.\n");
-//            exit(-1);
-//        }
-//        if (ErrorCode::SUCCESS != curStatus){
-//            fprintf(stderr, "Error: threads with t_index %d did not succeed in threadWork.\n", t_index);
-//            exit(-1);
-//        }
+        if (ErrorCode::SUCCESS != pthread_join(threadPool[t_index], (void**)&curStatus)) {
+            fprintf(stderr, "Error: Failure to join threads in run.\n");
+            exit(-1);
+        }
+        if (ErrorCode::SUCCESS != curStatus){
+            fprintf(stderr, "Error: threads with t_index %d did not succeed in threadWork.\n", t_index);
+            exit(-1);
+        }
     }
 
 //    for (int i = 0; i < numOfThreads; i++) {
