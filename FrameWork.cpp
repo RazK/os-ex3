@@ -99,10 +99,11 @@ void * threadWork(void * contextWrapper) {
             // All pairs with current key were processed into keySpecificVec - ready to reduce!
             // LAUNCH REDUCER ON CURRENT KEY-SPECIFIC-VECTOR
             context->readyQueue.push_back(keySpecificVec);
-            // and party
-            //Todo: Remember to send signal via semaphore. whenever the queue is read,
-            // use sem_post(context->queueSem)
-            // TODO: Shimmy: Implement your semaphore signal HERE
+
+//             sem_post(context->queueSem);
+
+//             TODO: Shimmy: Implement your semaphore signal HERE
+            context->queueSem.incSize();
 
         }
         context->shuffleState = ShuffleState::DONE_SHUFFLING;
@@ -173,7 +174,7 @@ ErrorCode FrameWork::run() {
     }
 
     // Run main thread's task
-    if (ErrorCode::SUCCESS != (ErrorCode)threadWork(static_cast<void *>(context_vec[0]))) { //todo: may not be 0
+    if (ErrorCode::SUCCESS != *static_cast<ErrorCode*>(threadWork(static_cast<void *>(context_vec[0])))) { //todo: may not be 0
         fprintf(stderr, "Error: main thread did not succeed in threadWork.\n");
         exit(-1);
     }
