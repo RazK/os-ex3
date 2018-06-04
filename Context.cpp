@@ -17,7 +17,8 @@ Context::Context(const MapReduceClient& client,
         barrier(multiThreadLevel),
         shuffleState(ShuffleState::WAITING_FOR_SHUFFLER),
         mapTaskCounter(0),
-        reduceTaskCounter(0)
+        reduceTaskCounter(0),
+        ac(0)
 
 //        , queueSem(0)
 {

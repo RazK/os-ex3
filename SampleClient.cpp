@@ -80,7 +80,7 @@ int main(int argc, char** argv)
     inputVec.push_back({nullptr, &s1});
     inputVec.push_back({nullptr, &s2});
     inputVec.push_back({nullptr, &s3});
-    runMapReduceFramework(client, inputVec, outputVec, 2);
+    runMapReduceFramework(client, inputVec, outputVec, 4);
 
     for (OutputPair& pair: outputVec) {
         char c = ((const KChar*)pair.first)->c;

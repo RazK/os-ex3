@@ -43,9 +43,10 @@ void * threadWork(void * contextWrapper) {
 
     //Hungry map loop
     unsigned long old_value = 0;
-    while(context->mapTaskCounter < context->inputSize)
+    while((old_value = context->mapTaskCounter++) < context->inputSize)
     {
-        old_value = context->mapTaskCounter++; //atomic
+        printf("old value for thread %d is %d\n\r", threadIndex, old_value);
+//        old_value = context->mapTaskCounter++; //atomic
         context->client.map( context->inputVec[old_value].first,
                              context->inputVec[old_value].second,
                              contextWrapper);
@@ -63,24 +64,30 @@ void * threadWork(void * contextWrapper) {
     context->barrier.barrier();
 
     /************************************************
-     *                  SHUFFLE                     *
+     *              SHUFFLE \ REDUCE                *
      ************************************************/
 
     //After Barrier.One thread becomes shuffler
-    if(pthread_mutex_lock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
-        fprintf(stderr, "Error: Mutex lock failure in shuffle thread, after barrier.\n");
-        exit(1);
-    }
+//    if(pthread_mutex_lock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
+//        fprintf(stderr, "Error: Mutex lock failure in shuffle thread, after barrier.\n");
+//        exit(1);
+//    }
 
-    if (ShuffleState::WAITING_FOR_SHUFFLER == context->shuffleState){
+    /************************************************
+     *                  SHUFFLE                     *
+     ************************************************/
+    int first = context->ac++;
+//    if (ShuffleState::WAITING_FOR_SHUFFLER == context->shuffleState){
+    if (first == 0){
+
         // lock for the rest of the threads
         context->shuffleState = ShuffleState::IN_SHUFFLE;
 
         // Let the rest of the threads run
-        if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
-            fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
-            exit(1);
-        }
+//        if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
+//            fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
+//            exit(1);
+//        }
 
         // Collect all unique keys from all intermediate unique keys vectors
         IntermediateUniqueKeysVec uniKeys; // Example: uniqueK2Vecs = {[1,2,3], [2,3], [1,3]}
@@ -101,6 +108,7 @@ void * threadWork(void * contextWrapper) {
         // DEBUG: Assuming keys in uniKeys are ordered just like in intermedVecs, i.e. uniKeys.back() is last in intermedVecs as well
         while(!uniKeys.empty()){
             // Get current key and extract all its pairs from all vectors
+            printf("%d\n\r",uniKeys.size());
             K2* currKey = uniKeys.back();
             uniKeys.pop_back();
             auto keySpecificVec = IntermediateVec(); // TODO: Free at the end of reducer's procedure
@@ -118,7 +126,7 @@ void * threadWork(void * contextWrapper) {
 
             if (pthread_mutex_lock(&context->queueMutex) != ErrorCode::SUCCESS)
             {
-                fprintf(stderr, "Error: Mutex lock failure in waiting thread.\n");
+                fprintf(stderr, "Error: SHUFFLER Mutex (queue mutex) lock failure in waiting thread.\n");
                 exit(1);
             }
 
@@ -126,15 +134,15 @@ void * threadWork(void * contextWrapper) {
 
             if (pthread_mutex_unlock(&context->queueMutex) != ErrorCode::SUCCESS)
             {
-                fprintf(stderr, "Error: Mutex unlock failure in waiting thread.\n");
+                fprintf(stderr, "Error: SHUFFLER Mutex (queue mutex) UNlock failure in waiting thread.\n");
                 exit(1);
             }
 
-            if (sem_post(&context->queueSem) != ErrorCode::SUCCESS)
-            {
-                fprintf(stderr, "Error: Failed to post semaphore in shuffle stage.\n");
-                exit(1);
-            }
+//            if (sem_post(&context->queueSem) != ErrorCode::SUCCESS)
+//            {
+//                fprintf(stderr, "Error: SHUFFLER Failed to post semaphore in shuffle stage.\n");
+//                exit(1);
+//            }
 
 
 //            context->queueSem.incSize();
@@ -147,12 +155,21 @@ void * threadWork(void * contextWrapper) {
      *                  REDUCE                      *
      ************************************************/
 
+//    else{
+//        // Let the rest of the threads run
+//        if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
+//            fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
+//            exit(1);
+//        }
+//    }
+
     // All threads continue here. ShuffleLocked represents the shuffler is still working
-    while(ShuffleState::IN_SHUFFLE == context->shuffleState || context->reduceTaskCounter < context->uniqueK2Size){
+    unsigned long task_num = 0;
+    while((task_num = context->reduceTaskCounter++) < context->uniqueK2Size){
         // Wait for the shuffler to populate queue. Signal comes through semaphore
         if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
         {
-            fprintf(stderr, "Error: Semaphore failure in waiting thread.\n");
+            fprintf(stderr, "Error: REDUCER Semaphore failure in waiting thread.\n");
             exit(1);
         }
 //        context->queueSem.aquire();
@@ -161,16 +178,16 @@ void * threadWork(void * contextWrapper) {
         // Lock the mutex to access mutual queue
         if (pthread_mutex_lock(&context->queueMutex) != ErrorCode::SUCCESS)
         {
-            fprintf(stderr, "Error: Mutex lock failure in waiting thread.\n");
+            fprintf(stderr, "Error: REDUCER Mutex lock failure in waiting thread.\n");
             exit(1);
         }
 
         // retrieve next job
-        IntermediateVec job = context->readyQueue[context->reduceTaskCounter];
-        context->reduceTaskCounter++;
+        IntermediateVec job = context->readyQueue[task_num];
+//        context->reduceTaskCounter++;
         if (pthread_mutex_unlock(&context->queueMutex) != ErrorCode::SUCCESS)
         {
-            fprintf(stderr, "Error: Mutex unlock failure in waiting thread.\n");
+            fprintf(stderr, "Error: REDUCER Mutex unlock failure in waiting thread.\n");
             exit(1);
         }
         context->client.reduce(&job, contextWrapper);
@@ -218,14 +235,14 @@ ErrorCode FrameWork::run() {
     // Join all none main threads back into 1
     for (int t_index = FIRST_NONMAIN_THREAD_INDEX; t_index<this->numOfThreads; t_index++){
         ErrorCode curStatus = ErrorCode::UNINITIALIZED;
-        if (ErrorCode::SUCCESS != pthread_join(threadPool[t_index], (void**)&curStatus)) {
-            fprintf(stderr, "Error: Failure to join threads in run.\n");
-            exit(-1);
-        }
-        if (ErrorCode::SUCCESS != curStatus){
-            fprintf(stderr, "Error: threads with t_index %d did not succeed in threadWork.\n", t_index);
-            exit(-1);
-        }
+//        if (ErrorCode::SUCCESS != pthread_join(threadPool[t_index], (void**)&curStatus)) {
+//            fprintf(stderr, "Error: Failure to join threads in run.\n");
+//            exit(-1);
+//        }
+//        if (ErrorCode::SUCCESS != curStatus){
+//            fprintf(stderr, "Error: threads with t_index %d did not succeed in threadWork.\n", t_index);
+//            exit(-1);
+//        }
     }
 
 //    for (int i = 0; i < numOfThreads; i++) {

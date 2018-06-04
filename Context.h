@@ -61,7 +61,9 @@ public:
 
     std::atomic<ShuffleState> shuffleState;
     std::atomic<unsigned long> mapTaskCounter;
+
     std::atomic<unsigned long> reduceTaskCounter;
+    std::atomic<int> ac;
 
     sem_t queueSem; //deprecated
 //    Semaphore queueSem;
