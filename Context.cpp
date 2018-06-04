@@ -12,7 +12,7 @@ Context::Context(const MapReduceClient& client,
         inputVec(inputVec),
         outputVec(outputVec),
         barrier(multiThreadLevel),
-        shuffleLocked(false),
+        shuffleState(ShuffleState::WAITING_FOR_SHUFFLER),
         counter(0),
         queueSem(0)
 {
@@ -37,10 +37,10 @@ Context::Context(const MapReduceClient& client,
 //        exit(1);
 //    }
 
-
     // Initialize empty intermediate pairs
     for (int i = 0; i < numOfIntermediatesVecs; i++){
-        this->intermedVecs[i] = new std::vector<IntermediatePair>();
+        this->intermedVecs[i] = new IntermediateVec();
+        this->uniqueK2Vecs[i] = new IntermediateUniqueKeysVec();
     }
 
 }
@@ -48,6 +48,7 @@ Context::Context(const MapReduceClient& client,
 Context::~Context() {
     // Delete all intermediate pairs
     for (int i = 0; i < numOfIntermediatesVecs; i++){
+        delete this->uniqueK2Vecs[i];
         delete this->intermedVecs[i];
     }
 
@@ -69,15 +70,15 @@ Context::~Context() {
 //        exit(1);
 //    }
     queueSem.~Semaphore() ;
-
 }
 
 void Context::prepareForShuffle(const tindex i) {
     // Sort intermediate vecotr
     std::sort(this->intermedVecs[i]->begin(), this->intermedVecs[i]->end());
+
     // List all unique keys (will be used for shuffle)
     IntermediateVec pairsUniqueByKey;
-    std::unique_copy(this->intermedVecs[i]->begin(), this->intermedVecs[i]->end(), back_inserter(pairsUniqueByKey));
+    std::unique_copy(this->intermedVecs[i]->begin(), this->intermedVecs[i]->end(), back_inserter(pairsUniqueByKey)); // TODO: Verifiy this is unique by keys and not by <key,val>
     std::transform(pairsUniqueByKey.begin(), pairsUniqueByKey.end(), back_inserter(*this->uniqueK2Vecs[i]), [](IntermediatePair& pair){return pair.first;});
 }
 

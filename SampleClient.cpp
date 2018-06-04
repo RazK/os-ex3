@@ -69,6 +69,7 @@ public:
 
 int main(int argc, char** argv)
 {
+    printf("running sample client");
     CounterClient client;
     InputVec inputVec;
     OutputVec outputVec;

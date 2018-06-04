@@ -10,7 +10,7 @@
 void emit2 (K2* key, V2* value, void* context){
     auto contextWrap = static_cast<ContextWrapper*>(context);
     auto index = contextWrap->threadIndex;
-    IntermediatePair pair = IntermediatePair(key, value);
+    auto pair = IntermediatePair(key, value);
     contextWrap->context->append(index, pair);
 }
 

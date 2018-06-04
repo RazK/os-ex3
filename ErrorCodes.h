@@ -8,6 +8,7 @@
 #define PRINT_ERR(ErrorCode) printf("ERR [%d] : LINE [%d] FILE [%s]", ErrorCode, __LINE__, __FILE__);
 
 typedef enum _ErrorCode{
+    UNINITIALIZED = -2,
     FAIL = -1,
     SUCCESS = 0
 } ErrorCode;

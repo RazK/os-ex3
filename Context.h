@@ -14,9 +14,19 @@
 #include <atomic>
 #include <semaphore.h>
 #include <set>
+#include <cstdio>
 //#include <vector> //sdt:vec
 //#include <utility> //std:pair
 
+typedef int tindex;
+
+typedef std::vector<K2*> IntermediateUniqueKeysVec;
+
+typedef enum _ShuffleState{
+    WAITING_FOR_SHUFFLER = 0,
+    IN_SHUFFLE,
+    DONE_SHUFFLING
+} ShuffleState;
 
 class Context{
 
@@ -26,31 +36,32 @@ public:
             int multiThreadLevel);
     ~Context();
 
+    //  Methods
     void append(tindex i, const IntermediatePair& pair);
     void prepareForShuffle(tindex i);
 
+    // Data members
     const int numOfIntermediatesVecs;
-    const MapReduceClient & client;
 
     const InputVec & inputVec;
+    const MapReduceClient & client;
+    OutputVec & outputVec;
+
+    IntermediateVec ** intermedVecs; // Map result vectors
+    IntermediateUniqueKeysVec ** uniqueK2Vecs; // Unique keys
 
     std::vector<IntermediateVec> readyQueue;
-
-    IntermediateUniqueKeysVec ** uniqueK2Vecs;
-    IntermediateVec ** intermedVecs;
-
-    OutputVec & outputVec;
 
     Barrier barrier;
     pthread_mutex_t shuffleMutex;
     pthread_mutex_t outVecMutex;
     pthread_mutex_t queueMutex;
-    std::atomic<bool> shuffleLocked;
+
+    std::atomic<ShuffleState> shuffleState;
     std::atomic<unsigned long> counter;
 
 //    sem_t queueSem; //deprecated
     Semaphore queueSem;
-
 
 };
 

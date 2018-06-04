@@ -50,10 +50,7 @@ typedef std::pair<K3*, V3*> OutputPair;
 
 typedef std::vector<InputPair> InputVec;
 typedef std::vector<IntermediatePair> IntermediateVec;
-typedef std::vector<K2*> IntermediateUniqueKeysVec;
 typedef std::vector<OutputPair> OutputVec;
-
-typedef int tindex;
 
 class MapReduceClient {
 public:

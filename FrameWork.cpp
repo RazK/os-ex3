@@ -4,7 +4,11 @@
 
 
 #include "FrameWork.h"
+#include <cstdio>
 #include <pthread.h>
+#include <f2c.h>
+
+#define FIRST_NONMAIN_THREAD_INDEX 1
 
 ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
 
@@ -15,27 +19,39 @@ ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
 
 
 void * threadWork(void * contextWrapper) {
+    // Unpack contextWrapper
     auto contextWrapperPtr = static_cast<ContextWrapper*> (contextWrapper);
     int threadIndex = contextWrapperPtr->threadIndex;
     Context* context = contextWrapperPtr->context;
+
+    /************************************************
+     *                  MAP PHASE                   *
+     ************************************************/
 
     //Hungry map loop
     unsigned long old_value = 0;
     while(context->counter < context->inputVec.size())
     {
         old_value = context->counter++; //atomic
-        contextWrapperPtr->context->client.map( context->inputVec.at(old_value).first,
-                                                context->inputVec.at(old_value).second,
-                                                contextWrapper);
+        context->client.map( context->inputVec[old_value].first,
+                             context->inputVec[old_value].second,
+                             contextWrapper);
     }
 
-    // intermediate vector assumed to be populated at this point
-
+    // My intermediate vector assumed to be populated at this point
     // Sorting Stage - No mutually shared objects
     context->prepareForShuffle(threadIndex);
 
+    /************************************************
+     *                  BARRIER                     *
+     ************************************************/
+
     // Barrier for all threads
     context->barrier.barrier();
+
+    /************************************************
+     *                  SHUFFLE                     *
+     ************************************************/
 
     //After Barrier.One thread becomes shuffler
     if(pthread_mutex_lock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
@@ -43,9 +59,10 @@ void * threadWork(void * contextWrapper) {
         exit(1);
     }
 
-    if (context->shuffleLocked == false){
+    if (ShuffleState::WAITING_FOR_SHUFFLER == context->shuffleState){
         // lock for the rest of the threads
-        context->shuffleLocked = true;
+        context->shuffleState = ShuffleState::IN_SHUFFLE;
+
 //        sem_wait(&context->queueSem); // TODO: Commented out for compilation, resolve this
         // Let the rest of the threads run
         if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
@@ -54,15 +71,15 @@ void * threadWork(void * contextWrapper) {
         }
 
         // Collect all unique keys from all intermediate unique keys vectors
-        IntermediateUniqueKeysVec uniKeys;
+        IntermediateUniqueKeysVec uniKeys; // Example: uniqueK2Vecs = {[1,2,3], [2,3], [1,3]}
         for (int i = 0; i < context->numOfIntermediatesVecs; i++) {
             std::copy(context->uniqueK2Vecs[i]->begin(), context->uniqueK2Vecs[i]->end(), back_inserter(uniKeys));   // 10 20 30 20 10 0  0  0  0
         }
         // Unify into single vector of ordered unique keys
         std::sort(uniKeys.begin(), uniKeys.end());
         IntermediateUniqueKeysVec::iterator it;
-        it = std::unique (uniKeys.begin(), uniKeys.end());   // 10 20 30 20 10 ?  ?  ?  ?
-        uniKeys.resize((long)std::distance(uniKeys.begin(), it) ); // 10 20 30 20 10
+        it = std::unique(uniKeys.begin(), uniKeys.end());   // 10 20 30 20 10 ?  ?  ?  ?
+        uniKeys.resize((unsigned long)std::distance(uniKeys.begin(), it) ); // 10 20 30 20 10
 
         // Go over ordered unique keys, foreach pop all pairs with this key from all vectors and launch reducer
         // DEBUG: Assuming keys in uniKeys are ordered just like in intermedVecs, i.e. uniKeys.back() is last in intermedVecs as well
@@ -70,28 +87,33 @@ void * threadWork(void * contextWrapper) {
             // Get current key and extract all its pairs from all vectors
             K2* currKey = uniKeys.back();
             uniKeys.pop_back();
-            auto * keySpecificVec = new IntermediateVec(); // TODO: Free at the end of reducer's procedure
+            auto keySpecificVec = IntermediateVec(); // TODO: Free at the end of reducer's procedure
             // Go over all intermediate vectors
             for (int j = 0; j < context->numOfIntermediatesVecs; j++) {
                 // Extract all pairs with current key (if has any)
                 while ((!context->intermedVecs[j]->empty()) && context->intermedVecs[j]->back().first == currKey){
-                    keySpecificVec->push_back(context->intermedVecs[j]->back());
+                    keySpecificVec.push_back(context->intermedVecs[j]->back());
                     context->intermedVecs[j]->pop_back();
                 }
             }
             // All pairs with current key were processed into keySpecificVec - ready to reduce!
             // LAUNCH REDUCER ON CURRENT KEY-SPECIFIC-VECTOR
-            context->readyQueue.push_back(*keySpecificVec);
+            context->readyQueue.push_back(keySpecificVec);
             // and party
             //Todo: Remember to send signal via semaphore. whenever the queue is read,
             // use sem_post(context->queueSem)
             // TODO: Shimmy: Implement your semaphore signal HERE
 
         }
-        context->shuffleLocked = false;
+        context->shuffleState = ShuffleState::DONE_SHUFFLING;
     }
+
+    /************************************************
+     *                  REDUCE                      *
+     ************************************************/
+
     // All threads continue here. ShuffleLocked represents the shuffler is still working
-    while(context->shuffleLocked || not context->readyQueue.empty()){
+    while(context->shuffleState || not context->readyQueue.empty()){
         // Wait for the shuffler to populate queue. Signal comes through semaphore
 //        if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
 //        {
@@ -123,49 +145,59 @@ void * threadWork(void * contextWrapper) {
 }
 
 
-
 FrameWork::FrameWork(const MapReduceClient &client, const InputVec &inputVec, OutputVec &outputVec,
                      int multiThreadLevel) :
-// client(client),
   numOfThreads(multiThreadLevel),
-//  atomic_counter(0),
-//  inputVec(inputVec),
-//  outputVec(outputVec),
-//  shuffleLocked(false),
-//  barrier(Barrier(multiThreadLevel)),
-  threadPool(new pthread_t[
-          multiThreadLevel]),
+  threadPool(new pthread_t[multiThreadLevel]),
   context(client, inputVec, outputVec, multiThreadLevel)
 {
-
-
-    //Todo: May nee to truncate the number of threads in use to the size of input vector.
-
+    if (multiThreadLevel < 1){
+        fprintf(stderr, "Error: multithread level %d is illegal.\n", multiThreadLevel);
+        exit(-1);
+    }
 }
 
 ErrorCode FrameWork::run() {
-    ErrorCode status[numOfThreads];
-
     //    Spawn threads on work function
-    for (int t_index=0; t_index<this->numOfThreads; t_index++){
-        if ((pthread_create(&threadPool[t_index], nullptr, threadWork,
-                            static_cast<void *>(&context))) != ErrorCode::SUCCESS) {
+    ContextWrapper* context_vec[numOfThreads];
+    for (int i = 0; i < numOfThreads; i++) {
+        context_vec[i] = new ContextWrapper(i, &this->context);
+    }
+
+    // Runs on all none main threads. First thread is considered thread 0
+    for (int t_index = FIRST_NONMAIN_THREAD_INDEX; t_index < this->numOfThreads; t_index++){
+        if (ErrorCode::SUCCESS != pthread_create(&threadPool[t_index], nullptr, threadWork, static_cast<void *>(context_vec[t_index]))) {
             fprintf(stderr, "Error: Failure to spawn new thread in run.\n");
             exit(-1);
         }
     }
 
-    //    Join all threads back into 1
-    for (int t_index=0; t_index<this->numOfThreads; t_index++){
-        if (pthread_join(threadPool[t_index], (void **)&status[t_index]) != ErrorCode::SUCCESS) {
+    // Run main thread's task
+    if (ErrorCode::SUCCESS != (ErrorCode)threadWork(static_cast<void *>(context_vec[0]))) { //todo: may not be 0
+        fprintf(stderr, "Error: main thread did not succeed in threadWork.\n");
+        exit(-1);
+    }
+
+    // Join all none main threads back into 1
+    for (int t_index = FIRST_NONMAIN_THREAD_INDEX; t_index<this->numOfThreads; t_index++){
+        ErrorCode curStatus = ErrorCode::UNINITIALIZED;
+        if (ErrorCode::SUCCESS != pthread_join(threadPool[t_index], (void**)&curStatus)) {
             fprintf(stderr, "Error: Failure to join threads in run.\n");
             exit(-1);
         }
+        if (ErrorCode::SUCCESS != curStatus){
+            fprintf(stderr, "Error: threads with t_index %d did not succeed in threadWork.\n", t_index);
+            exit(-1);
+        }
+    }
+
+    for (int i = 0; i < numOfThreads; i++) {
+        delete context_vec[i];
     }
 
     return SUCCESS;
 }
 
 FrameWork::~FrameWork() {
-//    return;
+    delete threadPool;
 }
