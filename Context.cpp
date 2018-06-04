@@ -78,19 +78,19 @@ Context::~Context() {
 //    queueSem.~Semaphore() ;
 }
 
-bool compareK2(const IntermediatePair& p1, const IntermediatePair& p2){
+bool K2lessthan(const IntermediatePair &p1, const IntermediatePair &p2){
     return *p1.first < *p2.first;
 }
 
 void Context::prepareForShuffle(const tindex i) {
     // Sort intermediate vecotr
     if(!intermedVecs[i].empty()){
-        std::sort(this->intermedVecs[i].begin(), this->intermedVecs[i].end(), compareK2);
+        std::sort(this->intermedVecs[i].begin(), this->intermedVecs[i].end(), K2lessthan);
 
         // List all unique keys (will be used for shuffle)
         std::transform(intermedVecs[i].begin(), intermedVecs[i].end(), back_inserter(this->uniqueK2Vecs[i]), [](IntermediatePair& pair){return pair.first;});
         IntermediateUniqueKeysVec::iterator it;
-        it = std::unique(this->uniqueK2Vecs[i].begin(), this->uniqueK2Vecs[i].end());
+        it = std::unique(this->uniqueK2Vecs[i].begin(), this->uniqueK2Vecs[i].end(), K2equals);
         this->uniqueK2Vecs[i].resize((unsigned long)std::distance(this->uniqueK2Vecs[i].begin(), it));
         // <key,val>
     }

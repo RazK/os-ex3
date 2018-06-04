@@ -17,7 +17,7 @@ ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
 
 }
 
-bool K2equal(const K2 *key1, const K2 *key2){
+bool K2equals(const K2 *key1, const K2 *key2){
     return !((*key1 < *key2) || (*key2 < *key1));
 }
 
@@ -94,8 +94,9 @@ void * threadWork(void * contextWrapper) {
             // Go over all intermediate vectors
             for (int j = 0; j < context->numOfIntermediatesVecs; j++) {
                 // Extract all pairs with current key (if has any)
-                while ((!context->intermedVecs[j].empty()) && K2equal(context->intermedVecs[j]
-                                                                             .back().first, currKey)){
+                while ((!context->intermedVecs[j].empty()) && K2equals(context->intermedVecs[j]
+                                                                               .back().first,
+                                                                       currKey)){
                     keySpecificVec.push_back(context->intermedVecs[j].back());
                     context->intermedVecs[j].pop_back();
                 }
