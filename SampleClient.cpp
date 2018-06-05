@@ -84,10 +84,12 @@ public:
 
 int main(int argc, char** argv)
 {
-    printf("running sample client");
     CounterClient client;
     InputVec inputVec;
     OutputVec outputVec;
+    CounterClient client2;
+    InputVec inputVec2;
+    OutputVec outputVec2;
 
 
     // "a"*1
@@ -104,25 +106,23 @@ int main(int argc, char** argv)
         inputVec.push_back({nullptr, &s2});
         inputVec.push_back({nullptr, &s3});
     }
-//    inputVec.push_back({nullptr, &s1});
-//    inputVec.push_back({nullptr, &s2});
-//    inputVec.push_back({nullptr, &s3});
-//
-//    inputVec.push_back({nullptr, &s1});
-//    inputVec.push_back({nullptr, &s2});
-//    inputVec.push_back({nullptr, &s3});
 
+    for (int i=1; i< 10; i++){
+        runMapReduceFramework(client, inputVec, outputVec, i);
 
-    runMapReduceFramework(client, inputVec, outputVec, 4);
+        for (OutputPair& pair: outputVec) {
+            char c = ((const KChar*)pair.first)->c;
+            int count = ((const VCount*)pair.second)->count;
+            printf("The character %c appeared %d time%s\n",
+                   c, count, count > 1 ? "s" : "");
+//            delete pair.first;
+//            delete pair.second;
+        }
 
-    for (OutputPair& pair: outputVec) {
-        char c = ((const KChar*)pair.first)->c;
-        int count = ((const VCount*)pair.second)->count;
-        printf("The character %c appeared %d time%s\n",
-               c, count, count > 1 ? "s" : "");
-        delete pair.first;
-        delete pair.second;
     }
+
+
+
 
     return 0;
 }

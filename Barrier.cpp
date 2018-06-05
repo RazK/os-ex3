@@ -29,19 +29,16 @@ Barrier::~Barrier()
 
 void Barrier::barrier(int thread_id)
 {
-    printf("BARRIER: THREAD %d ENTERED\r\n", thread_id);
     if (pthread_mutex_lock(&mutex) != 0){
         fprintf(stderr, "[[Barrier]] error on pthread_mutex_lock");
         exit(1);
     }
     if (++count < numThreads) {
-        printf("BARRIER: THREAD %d BLOCKED\r\n", thread_id);
         if (pthread_cond_wait(&cv, &mutex) != 0){
             fprintf(stderr, "[[Barrier]] error on pthread_cond_wait");
             exit(1);
         }
     } else {
-        printf("BARRIER: THREAD %d RELEASING\r\n", thread_id);
         count = 0;
         if (pthread_cond_broadcast(&cv) != 0) {
             fprintf(stderr, "[[Barrier]] error on pthread_cond_broadcast");
@@ -52,6 +49,5 @@ void Barrier::barrier(int thread_id)
         fprintf(stderr, "[[Barrier]] error on pthread_mutex_unlock");
         exit(1);
     }
-    printf("BARRIER: THREAD %d EXIT\r\n", thread_id);
 }
 

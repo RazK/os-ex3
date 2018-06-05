@@ -44,10 +44,7 @@ void * threadWork(void * contextWrapper) {
 
     //Hungry map loop
     unsigned long old_value = 0;
-    while((old_value = context->mapTaskCounter++) < context->inputSize)
-    {
-        printf("old value for thread %d is %d\n\r", threadIndex, old_value);
-//        old_value = context->mapTaskCounter++; //atomic
+    while((old_value = context->mapTaskCounter++) < context->inputSize) {
         context->client.map( context->inputVec[old_value].first,
                              context->inputVec[old_value].second,
                              contextWrapper);
@@ -68,22 +65,16 @@ void * threadWork(void * contextWrapper) {
      *              SHUFFLE \ REDUCE                *
      ************************************************/
 
-    //After Barrier.One thread becomes shuffler
-//    if(pthread_mutex_lock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
-//        fprintf(stderr, "Error: Mutex lock failure in shuffle thread, after barrier.\n");
-//        exit(1);
-//    }
-
     /************************************************
      *                  SHUFFLE                     *
      ************************************************/
-    int first = context->ac++;
-//    if (ShuffleState::WAITING_FOR_SHUFFLER == context->shuffleState){
+    // first to retrive 0 (atomically) is crowned shuffler. Long shall he reign!
+    int first = context->shufflerRace++;
     if (first == 0){
 
         // lock for the rest of the threads
         context->shuffleState = ShuffleState::IN_SHUFFLE;
-        
+
         // Collect all unique keys from all intermediate unique keys vectors
         IntermediateUniqueKeysVec uniKeys; // Example: uniqueK2Vecs = {[1,2,3], [2,3], [1,3]}
         for (int i = 0; i < context->numOfIntermediatesVecs; i++) {
@@ -100,10 +91,8 @@ void * threadWork(void * contextWrapper) {
          *                  PRODUCE TASKS                *
          ************************************************/
         // Go over ordered unique keys, foreach pop all pairs with this key from all vectors and launch reducer
-        // DEBUG: Assuming keys in uniKeys are ordered just like in intermedVecs, i.e. uniKeys.back() is last in intermedVecs as well
         while(!uniKeys.empty()){
             // Get current key and extract all its pairs from all vectors
-            printf("%d\n\r",uniKeys.size());
             K2* currKey = uniKeys.back();
             uniKeys.pop_back();
             auto keySpecificVec = IntermediateVec(); // TODO: Free at the end of reducer's procedure
@@ -123,8 +112,6 @@ void * threadWork(void * contextWrapper) {
                 exit(1);
             }
 
-            fprintf(stdout, "SHUFFLER (%d) PUSHING TASK %ld\n\r", threadIndex, context->readyQueue
-                    .size());
             context->readyQueue.push_back(keySpecificVec);
 
             if (sem_post(&context->taskQueueSem) != ErrorCode::SUCCESS)
@@ -141,7 +128,7 @@ void * threadWork(void * contextWrapper) {
         }
         context->shuffleState = ShuffleState::DONE_SHUFFLING;
 
-        //special loop to release all remaining threads stuck on sem for task counter:
+        //special magic loop to release all remaining threads stuck on sem for task counter:
         for (int i=0; i<context->numOfIntermediatesVecs; i++){
 
             if (sem_post(&context->taskCountSem) != ErrorCode::SUCCESS)
@@ -165,7 +152,6 @@ void * threadWork(void * contextWrapper) {
     // All threads continue here. ShuffleLocked represents the shuffler is still working
     unsigned long task_num = 0;
     while(true){
-
         if (context->reduceTaskCounter >= context->uniqueK2Size){
             break;
         }
@@ -186,15 +172,14 @@ void * threadWork(void * contextWrapper) {
 
         // Leave if all tasks were performed
         task_num = context->reduceTaskCounter++;
-        fprintf(stdout, "THREAD %d TAKING TASK %d\n\r", threadIndex, task_num);
+
         IntermediateVec job;
-        // retrieve next job
+        // retrieve next job if exists
         if (task_num < context->uniqueK2Size){
             job = context->readyQueue[task_num];
 
-        } // else?
+        }
 
-//        context->reduceTaskCounter++;
         if (sem_post(&context->taskQueueSem) != ErrorCode::SUCCESS)
         {
             fprintf(stderr, "Error: REDUCER Mutex unlock failure in waiting thread.\n");
@@ -232,18 +217,22 @@ ErrorCode FrameWork::run() {
 
     // Runs on all none main threads. First thread is considered thread 0
     for (int t_index = FIRST_NONMAIN_THREAD_INDEX; t_index < this->numOfThreads; t_index++){
-        if (ErrorCode::SUCCESS != pthread_create(&threadPool[t_index], nullptr, threadWork, static_cast<void *>(&context_vec[t_index]))) {
+        if (ErrorCode::SUCCESS != pthread_create(&threadPool[t_index],
+                                                 nullptr,
+                                                 threadWork,
+                                                 static_cast<void *>(&context_vec[t_index])))
+        {
             fprintf(stderr, "Error: Failure to spawn new thread in run.\n");
             exit(-1);
         }
     }
 
-    // Run main thread's task
-//    if (ErrorCode::SUCCESS != *static_cast<ErrorCode*>(threadWork(static_cast<void *>(context_vec[0])))) { //todo: may not be 0
-//        fprintf(stderr, "Error: main thread did not succeed in threadWork.\n");
-//        exit(-1);
-//    }
-    threadWork(static_cast<void *>(&context_vec[0]));
+//     Run main thread's task
+    auto curStatus = threadWork(static_cast<void *>(&context_vec[0]));
+    if (ErrorCode::SUCCESS != *(ErrorCode*)&curStatus){
+        fprintf(stderr, "Error: threads with t_index 0 did not succeed in threadWork.\n");
+        exit(-1);
+    }
 
     // Join all none main threads back into 1
     for (int t_index = FIRST_NONMAIN_THREAD_INDEX; t_index<this->numOfThreads; t_index++){
@@ -257,14 +246,9 @@ ErrorCode FrameWork::run() {
             exit(-1);
         }
     }
-
-//    for (int i = 0; i < numOfThreads; i++) {
-//        delete context_vec[i];
-//    }
-
     return SUCCESS;
 }
 
 FrameWork::~FrameWork() {
-    delete threadPool;
+    delete [] threadPool;
 }

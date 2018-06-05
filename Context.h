@@ -62,7 +62,7 @@ public:
     std::atomic<unsigned long> mapTaskCounter;
 
     std::atomic<unsigned long> reduceTaskCounter;
-    std::atomic<int> ac;
+    std::atomic<int> shufflerRace;
 
     sem_t taskQueueSem;
     sem_t taskCountSem; //deprecated

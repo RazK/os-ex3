@@ -18,7 +18,7 @@ Context::Context(const MapReduceClient& client,
         shuffleState(ShuffleState::WAITING_FOR_SHUFFLER),
         mapTaskCounter(0),
         reduceTaskCounter(0),
-        ac(0)
+        shufflerRace(0)
 
 //        , taskCountSem(0)
 {
