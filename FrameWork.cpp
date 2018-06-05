@@ -10,6 +10,7 @@
 
 #define FIRST_NONMAIN_THREAD_INDEX 1
 
+
 ContextWrapper::ContextWrapper() {}
 
 ContextWrapper::ContextWrapper(int threadIndex, Context * context) {
@@ -61,7 +62,7 @@ void * threadWork(void * contextWrapper) {
      ************************************************/
 
     // Barrier for all threads
-    context->barrier.barrier();
+    context->barrier.barrier(threadIndex);
 
     /************************************************
      *              SHUFFLE \ REDUCE                *
@@ -82,13 +83,7 @@ void * threadWork(void * contextWrapper) {
 
         // lock for the rest of the threads
         context->shuffleState = ShuffleState::IN_SHUFFLE;
-
-        // Let the rest of the threads run
-//        if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
-//            fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
-//            exit(1);
-//        }
-
+        
         // Collect all unique keys from all intermediate unique keys vectors
         IntermediateUniqueKeysVec uniKeys; // Example: uniqueK2Vecs = {[1,2,3], [2,3], [1,3]}
         for (int i = 0; i < context->numOfIntermediatesVecs; i++) {
@@ -120,80 +115,98 @@ void * threadWork(void * contextWrapper) {
                     keySpecificVec.push_back(context->intermedVecs[j].back());
                     context->intermedVecs[j].pop_back();
                 }
-            }
-            // All pairs with current key were processed into keySpecificVec - ready to reduce!
-            // LAUNCH REDUCER ON CURRENT KEY-SPECIFIC-VECTOR
+            } // All pairs with current key were processed into keySpecificVec - ready to reduce!
 
-            if (pthread_mutex_lock(&context->queueMutex) != ErrorCode::SUCCESS)
+            if (sem_wait(&context->taskQueueSem) != ErrorCode::SUCCESS)
             {
                 fprintf(stderr, "Error: SHUFFLER Mutex (queue mutex) lock failure in waiting thread.\n");
                 exit(1);
             }
 
+            fprintf(stdout, "SHUFFLER (%d) PUSHING TASK %ld\n\r", threadIndex, context->readyQueue
+                    .size());
             context->readyQueue.push_back(keySpecificVec);
 
-            if (pthread_mutex_unlock(&context->queueMutex) != ErrorCode::SUCCESS)
+            if (sem_post(&context->taskQueueSem) != ErrorCode::SUCCESS)
             {
                 fprintf(stderr, "Error: SHUFFLER Mutex (queue mutex) UNlock failure in waiting thread.\n");
                 exit(1);
             }
 
-//            if (sem_post(&context->queueSem) != ErrorCode::SUCCESS)
-//            {
-//                fprintf(stderr, "Error: SHUFFLER Failed to post semaphore in shuffle stage.\n");
-//                exit(1);
-//            }
-
-
-//            context->queueSem.incSize();
-
+            if (sem_post(&context->taskCountSem) != ErrorCode::SUCCESS)
+            {
+                fprintf(stderr, "Error: SHUFFLER Failed to post semaphore in shuffle stage.\n");
+                exit(1);
+            }
         }
         context->shuffleState = ShuffleState::DONE_SHUFFLING;
+
+        //special loop to release all remaining threads stuck on sem for task counter:
+        for (int i=0; i<context->numOfIntermediatesVecs; i++){
+
+            if (sem_post(&context->taskCountSem) != ErrorCode::SUCCESS)
+            {
+                fprintf(stderr, "Error: SHUFFLER Failed to post semaphore in release loop\n");
+                exit(1);
+            }
+            if (sem_post(&context->taskQueueSem) != ErrorCode::SUCCESS)
+            {
+                fprintf(stderr, "Error: SHUFFLER Failed to post semaphore in release loop\n");
+                exit(1);
+            }
+
+        }
     }
 
     /************************************************
      *                  REDUCE                      *
      ************************************************/
 
-//    else{
-//        // Let the rest of the threads run
-//        if(pthread_mutex_unlock(&context->shuffleMutex) != ErrorCode::SUCCESS) {
-//            fprintf(stderr, "Error: Mutex unlock failure in shuffle thread, after barrier.\n");
-//            exit(1);
-//        }
-//    }
-
     // All threads continue here. ShuffleLocked represents the shuffler is still working
     unsigned long task_num = 0;
-    while((task_num = context->reduceTaskCounter++) < context->uniqueK2Size){
+    while(true){
+
+        if (context->reduceTaskCounter >= context->uniqueK2Size){
+            break;
+        }
+
         // Wait for the shuffler to populate queue. Signal comes through semaphore
-        if (sem_wait(&context->queueSem) != ErrorCode::SUCCESS)
+        if (sem_wait(&context->taskCountSem) != ErrorCode::SUCCESS)
         {
             fprintf(stderr, "Error: REDUCER Semaphore failure in waiting thread.\n");
             exit(1);
         }
-//        context->queueSem.aquire();
-//        context->queueSem.decSize();
 
         // Lock the mutex to access mutual queue
-        if (pthread_mutex_lock(&context->queueMutex) != ErrorCode::SUCCESS)
+        if (sem_wait(&context->taskQueueSem) != ErrorCode::SUCCESS)
         {
             fprintf(stderr, "Error: REDUCER Mutex lock failure in waiting thread.\n");
             exit(1);
         }
 
+        // Leave if all tasks were performed
+        task_num = context->reduceTaskCounter++;
+        fprintf(stdout, "THREAD %d TAKING TASK %d\n\r", threadIndex, task_num);
+        IntermediateVec job;
         // retrieve next job
-        IntermediateVec job = context->readyQueue[task_num];
+        if (task_num < context->uniqueK2Size){
+            job = context->readyQueue[task_num];
+
+        } // else?
+
 //        context->reduceTaskCounter++;
-        if (pthread_mutex_unlock(&context->queueMutex) != ErrorCode::SUCCESS)
+        if (sem_post(&context->taskQueueSem) != ErrorCode::SUCCESS)
         {
             fprintf(stderr, "Error: REDUCER Mutex unlock failure in waiting thread.\n");
             exit(1);
         }
-        context->client.reduce(&job, contextWrapper);
 
+        if (task_num < context->uniqueK2Size){
+            context->client.reduce(&job, contextWrapper);
 
+        }
     }
+
     return (void *)ErrorCode::SUCCESS;
 }
 

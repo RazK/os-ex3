@@ -57,7 +57,6 @@ public:
     Barrier barrier;
     pthread_mutex_t shuffleMutex;
     pthread_mutex_t outVecMutex;
-    pthread_mutex_t queueMutex;
 
     std::atomic<ShuffleState> shuffleState;
     std::atomic<unsigned long> mapTaskCounter;
@@ -65,8 +64,9 @@ public:
     std::atomic<unsigned long> reduceTaskCounter;
     std::atomic<int> ac;
 
-    sem_t queueSem; //deprecated
-//    Semaphore queueSem;
+    sem_t taskQueueSem;
+    sem_t taskCountSem; //deprecated
+//    Semaphore taskCountSem;
 
 };
 

@@ -20,7 +20,7 @@ Context::Context(const MapReduceClient& client,
         reduceTaskCounter(0),
         ac(0)
 
-//        , queueSem(0)
+//        , taskCountSem(0)
 {
     // Initialize multiple mutexes
     if (pthread_mutex_init(&shuffleMutex, nullptr) != ErrorCode::SUCCESS){
@@ -31,14 +31,13 @@ Context::Context(const MapReduceClient& client,
         fprintf(stderr, "Error: Failure to init mutex in Context init.\n");
         exit(1);
     }
-    if (pthread_mutex_init(&queueMutex, nullptr) != ErrorCode::SUCCESS){
+
+    if (sem_init(&taskQueueSem, 0, 1) != ErrorCode::SUCCESS){
         fprintf(stderr, "Error: Failure to init mutex in Context init.\n");
         exit(1);
     }
 
-    // init semaphore
-//     already did in init list
-    if (sem_init(&queueSem, 0, 0) != ErrorCode::SUCCESS){
+    if (sem_init(&taskCountSem, 0, 0) != ErrorCode::SUCCESS){
         fprintf(stderr, "Error: Failure to init semaphore in Context init.\n");
         exit(1);
     }
@@ -71,15 +70,15 @@ Context::~Context() {
         fprintf(stderr, "Error: Failure destroy a mutex 2 (for the output vec) in Context dtor.\n");
         exit(1);
     }
-    if (pthread_mutex_destroy(&queueMutex) != ErrorCode::SUCCESS){
+    if (sem_destroy(&taskQueueSem) != ErrorCode::SUCCESS){
         fprintf(stderr, "Error: Failure destroy a mutex 3(for readyqueue) in Context dtor.\n");
         exit(1);
     }
-    if (sem_destroy(&queueSem) != ErrorCode::SUCCESS){
+    if (sem_destroy(&taskCountSem) != ErrorCode::SUCCESS){
         fprintf(stderr, "Error: Failure destroy semaphore in Context dtor.\n");
         exit(1);
     }
-//    queueSem.~Semaphore() ;
+//    taskCountSem.~Semaphore() ;
 }
 
 

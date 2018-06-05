@@ -12,7 +12,7 @@ class Barrier {
 public:
     Barrier(int numThreads);
     ~Barrier();
-    void barrier();
+    void barrier(int thread_id);
 
 private:
     pthread_mutex_t mutex;
